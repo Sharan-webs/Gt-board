@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="kb-root">
+
+  <div id="topbar">
+    <button id="gtBtn" class="gt-toggle">GT</button>
+    <div id="gtPanel" class="gt-panel hidden">
+      <button class="gt-mini" data-panel="ai">CA</button>
+      <button class="gt-mini" data-panel="jw">JW</button>
+      <button class="gt-mini" data-panel="jt">JT</button>
+      <button class="gt-mini" data-panel="jte">JTE</button>
+      <button class="gt-mini gt-kill" id="killGt">Kill GT</button>
+    </div>
+    <div id="langLabel">English</div>
+  </div>
+
+  <div id="views">
+    <div id="view-letters" class="kb-view active"></div>
+    <div id="view-numsym" class="kb-view"></div>
+    <div id="view-symbols2" class="kb-view"></div>
+    <div id="view-emoji" class="kb-view">
+      <div id="emojiTabs"></div>
+      <div id="emojiSearchWrap">
+        <input id="emojiSearch" type="text" placeholder="Search emoji, GIFs, stickers">
+      </div>
+      <div id="emojiGrid"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="floatingLayer"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
