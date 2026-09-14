@@ -52,12 +52,12 @@ class MyKeyboardIME : InputMethodService() {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                applyStoredThemeIfAny()
+                try { applyStoredThemeIfAny() } catch (e: Exception) { }
             }
         }
         webView.loadUrl("file:///android_asset/index.html")
 
-        registerThemeReceiver()
+        try { registerThemeReceiver() } catch (e: Exception) { }
         return webView
     }
 
@@ -65,28 +65,35 @@ class MyKeyboardIME : InputMethodService() {
         if (themeReceiver != null) return
         themeReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                applyStoredThemeIfAny()
+                try { applyStoredThemeIfAny() } catch (e: Exception) { }
             }
         }
         val filter = IntentFilter("com.foru.customkeyboard.THEME_UPDATED")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.registerReceiver(this, themeReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            registerReceiver(themeReceiver, filter)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.registerReceiver(this, themeReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+            } else {
+                @Suppress("UnspecifiedRegisterReceiverFlag")
+                registerReceiver(themeReceiver, filter)
+            }
+        } catch (e: Exception) {
+            themeReceiver = null
         }
     }
 
     private fun applyStoredThemeIfAny() {
-        val file = File(filesDir, "theme_bg.png")
-        if (!::webView.isInitialized) return
-        Handler(Looper.getMainLooper()).post {
-            if (file.exists()) {
-                // cache-bust so the WebView doesn't reuse a stale cached image
-                val uri = "file://${file.absolutePath}?t=${System.currentTimeMillis()}"
-                webView.evaluateJavascript("window.applyThemeBackground && window.applyThemeBackground(${jsString(uri)});", null)
+        try {
+            val file = File(filesDir, "theme_bg.png")
+            if (!::webView.isInitialized) return
+            Handler(Looper.getMainLooper()).post {
+                try {
+                    if (file.exists()) {
+                        val uri = "file://${file.absolutePath}?t=${System.currentTimeMillis()}"
+                        webView.evaluateJavascript("window.applyThemeBackground && window.applyThemeBackground(${jsString(uri)});", null)
+                    }
+                } catch (e: Exception) { }
             }
-        }
+        } catch (e: Exception) { }
     }
 
     private fun jsString(s: String): String = "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
