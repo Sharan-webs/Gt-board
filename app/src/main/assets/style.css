@@ -12,7 +12,6 @@ html, body { margin: 0; padding: 0; background: #0e0f13; font-family: -apple-sys
   transition: background-image 0.3s;
 }
 
-/* ---------- icon buttons (shared) ---------- */
 .icon-btn {
   background: #1a1c22;
   border: 1px solid #2c2e37;
@@ -24,7 +23,6 @@ html, body { margin: 0; padding: 0; background: #0e0f13; font-family: -apple-sys
 }
 .ic { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; color: #c3c6cf; }
 
-/* ---------- top bar ---------- */
 #topbar { flex: 0 0 auto; display: flex; align-items: center; padding: 2px 2px 8px; gap: 6px; }
 .gt-toggle { width: 40px; height: 34px; background: linear-gradient(135deg,#2a2c34,#1c1e24); border-color: #3a3d47; }
 .gt-toggle .ic-gt { color: #ff5470; animation: boltPulse 1.6s ease-in-out infinite; }
@@ -49,7 +47,6 @@ html, body { margin: 0; padding: 0; background: #0e0f13; font-family: -apple-sys
 .gt-kill .ic { color: #ff6b6b; animation: killPulse 1.4s ease-in-out infinite; }
 @keyframes killPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
 
-/* ---------- GT mode gaming border ---------- */
 body.gt-mode #kb-root { border-radius: 14px; animation: gtGlow 2.4s ease-in-out infinite; border: 2px solid transparent; }
 @keyframes gtGlow {
   0%   { box-shadow: 0 0 16px 3px rgba(255,68,68,0.55), inset 0 0 14px rgba(255,68,68,0.18); border-color: #ff4444; }
@@ -58,29 +55,18 @@ body.gt-mode #kb-root { border-radius: 14px; animation: gtGlow 2.4s ease-in-out 
 }
 body.gt-mode .gt-toggle { border-color: rgba(46,222,127,0.5); }
 
-/* ---------- stage (floating boxes live here, above the keys) ---------- */
 #stage { flex: 1 1 auto; position: relative; min-height: 0; }
 #floatingLayer { position: absolute; inset: 0; pointer-events: none; }
 
-/* ---------- fixed-size key area (never resizes) ---------- */
 #keysArea { flex: 0 0 auto; }
 .kb-view { display: none; }
 .kb-view.active { display: block; }
 .kb-row { display: flex; gap: 6px; margin-bottom: 7px; padding: 0 2px; }
 
 .key {
-  flex: 1;
-  background: #22242b;
-  color: #f2f3f5;
-  border: none;
-  border-radius: 10px;
-  font-size: 17px;
-  font-weight: 500;
-  padding: 13px 0;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  flex: 1; background: #22242b; color: #f2f3f5; border: none; border-radius: 10px;
+  font-size: 17px; font-weight: 500; padding: 13px 0; text-align: center;
+  display: flex; align-items: center; justify-content: center;
   box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 2px 3px rgba(0,0,0,0.25);
 }
 .key:active { background: #34363f; transform: translateY(1px); }
@@ -92,11 +78,10 @@ body.gt-mode .gt-toggle { border-color: rgba(46,222,127,0.5); }
 .key-enter { background: linear-gradient(135deg, #4d7cff, #3a63e0); color: #fff; font-size: 15px; }
 .key-space { flex: 5; color: #6b6f7a; font-size: 12px; font-weight: 600; }
 
-/* ---------- floating box (CA/JW/JT/JTE/Emoji/Clipboard) ---------- */
 .float-box {
   position: absolute;
   left: 4px; right: 4px;
-  top: 2px; bottom: 20px; /* the visible gap above the key rows */
+  top: 2px; bottom: 20px;
   background: #17181e;
   border: 1px solid #2c2e37;
   border-radius: 14px;
@@ -154,7 +139,6 @@ textarea.ai-input { min-height: 52px; resize: none; }
 .clip-row { cursor: pointer; }
 .clip-text { color: #f2f3f5; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ---------- emoji panel ---------- */
 .emoji-panel { padding: 8px !important; }
 #emojiTabs { display: flex; gap: 5px; margin-bottom: 6px; }
 .emoji-tab { width: 34px; height: 30px; flex: 1; }

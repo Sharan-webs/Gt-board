@@ -1,5 +1,5 @@
 /* =========================================================
-   GT KEYBOARD - core app logic (v3: floating-box UI)
+   GT KEYBOARD - core app logic (floating-box UI)
    ========================================================= */
 
 const GIPHY_KEY = "x3lgplS4mV35AlgS0ROivHNJAxz3E7j8";
@@ -14,12 +14,11 @@ const Bridge = {
   pickTheme: () => window.Android ? Android.requestThemeImage() : console.log("PICK THEME"),
 };
 
-// called from native once a theme image is saved
 window.applyThemeBackground = function (fileUrl) {
-  document.getElementById("kb-root").style.backgroundImage =
-    `linear-gradient(180deg, rgba(10,11,14,0.78), rgba(10,11,14,0.88)), url("${fileUrl}")`;
-  document.getElementById("kb-root").style.backgroundSize = "cover";
-  document.getElementById("kb-root").style.backgroundPosition = "center";
+  const root = document.getElementById("kb-root");
+  root.style.backgroundImage = `linear-gradient(180deg, rgba(10,11,14,0.78), rgba(10,11,14,0.88)), url("${fileUrl}")`;
+  root.style.backgroundSize = "cover";
+  root.style.backgroundPosition = "center";
 };
 
 /* =========================================================
@@ -127,9 +126,7 @@ async function callGroq(systemPrompt, userText) {
 }
 
 /* =========================================================
-   CLIPBOARD (our own copy history - real system clipboard
-   can't be read in the background on modern Android, so we
-   track things copied via this keyboard's own copy buttons)
+   CLIPBOARD
    ========================================================= */
 
 function saveClip(text) {
@@ -143,7 +140,6 @@ function deleteClip(index) {
   clips.splice(index, 1);
   localStorage.setItem("clip_history", JSON.stringify(clips));
 }
-
 function addLongPress(el, onLongPress, ms = 550) {
   let timer = null;
   const start = () => { timer = setTimeout(onLongPress, ms); };
@@ -202,8 +198,7 @@ function renderLetters() {
     rowEl.className = "kb-row";
     row.forEach((k) => {
       if (k === "SHIFT") {
-        const b = buildIconKey("SHIFT", "shift", "key-wide" + (shiftOn || capsLock ? " key-active" : ""));
-        rowEl.appendChild(b);
+        rowEl.appendChild(buildIconKey("SHIFT", "shift", "key-wide" + (shiftOn || capsLock ? " key-active" : "")));
       } else if (k === "BACK") {
         rowEl.appendChild(buildIconKey("BACK", "backspace", "key-wide"));
       } else {
@@ -281,7 +276,7 @@ renderGrid("view-numsym", NUMSYM_ROWS, "?123", "SYM2");
 renderGrid("view-symbols2", SYMBOLS2_ROWS, "?123", "NUM");
 
 /* =========================================================
-   ICON BUTTONS SETUP (topbar)
+   ICON BUTTONS (topbar)
    ========================================================= */
 
 iconBtn(document.getElementById("gtBtn"), "gt");
@@ -292,7 +287,6 @@ document.querySelectorAll('.gt-mini[data-panel]').forEach((btn) => {
 iconBtn(document.getElementById("clipboardBtn"), "clipboard");
 iconBtn(document.getElementById("themeBtn"), "theme");
 iconBtn(document.getElementById("killGt"), "kill");
-
 document.getElementById("clipboardBtn").addEventListener("click", openClipboardPanel);
 document.getElementById("themeBtn").addEventListener("click", () => Bridge.pickTheme());
 
@@ -315,26 +309,19 @@ document.getElementById("killGt").addEventListener("click", () => {
 });
 
 /* =========================================================
-   FLOATING PANELS - CA / JW / JT / JTE / Emoji / Clipboard
-   All share one mechanism: keyboard height grows so the box
-   has real room above the (unchanged-size) key rows, with a
-   visible gap between box and keys. Alphabet keys are NEVER
-   hidden - closing the box just reveals them again.
+   FLOATING PANELS
    ========================================================= */
 
 function closeFloatingBox() {
   document.getElementById("floatingLayer").innerHTML = "";
   Bridge.collapse();
 }
-
 function createFloatingBox(iconName) {
   closeFloatingBox();
   Bridge.expand();
-
   const layer = document.getElementById("floatingLayer");
   const box = document.createElement("div");
   box.className = "float-box";
-
   const header = document.createElement("div");
   header.className = "float-header";
   const drag = document.createElement("span");
@@ -349,16 +336,13 @@ function createFloatingBox(iconName) {
   closeBtn.addEventListener("mousedown", (e) => e.preventDefault());
   closeBtn.onclick = () => closeFloatingBox();
   header.append(drag, titleIcon, closeBtn);
-
   const content = document.createElement("div");
   content.className = "float-content";
-
   box.append(header, content);
   layer.appendChild(box);
   makeDraggable(box, drag);
   return content;
 }
-
 function makeDraggable(box, handle) {
   let sx = 0, sy = 0, ox = 0, oy = 0, dragging = false;
   handle.addEventListener("touchstart", (e) => {
@@ -380,7 +364,6 @@ function makeDraggable(box, handle) {
   }, { passive: false });
   handle.addEventListener("touchend", () => dragging = false);
 }
-
 function copyBoxHTML(text) {
   const wrap = document.createElement("div");
   wrap.className = "copy-box";
@@ -400,7 +383,6 @@ function copyBoxHTML(text) {
   wrap.append(p, btn);
   return wrap;
 }
-
 function openPanel(name) {
   if (name === "ai") openAiPanel();
   if (name === "jw") openJwPanel();
@@ -408,7 +390,6 @@ function openPanel(name) {
   if (name === "jte") openTranslatePanel("jte", true);
 }
 
-// ---------- CA ----------
 function openAiPanel() {
   const content = createFloatingBox("ai");
   const keyRow = document.createElement("div");
@@ -435,12 +416,10 @@ function openAiPanel() {
   input.className = "ai-input local-typable";
   input.inputMode = "none";
   input.placeholder = "Ask the AI anything...";
-
   const sendBtn = document.createElement("button");
   sendBtn.className = "icon-btn ai-send";
   sendBtn.innerHTML = icon("send");
   sendBtn.addEventListener("mousedown", (e) => e.preventDefault());
-
   const resultWrap = document.createElement("div");
   sendBtn.onclick = async () => {
     resultWrap.innerHTML = "<div class='media-loading'>Thinking\u2026</div>";
@@ -450,11 +429,9 @@ function openAiPanel() {
       resultWrap.appendChild(copyBoxHTML(reply));
     } catch (err) { resultWrap.innerHTML = `<div class='media-loading'>${err.message}</div>`; }
   };
-
   content.append(keyRow, input, sendBtn, resultWrap);
 }
 
-// ---------- JT / JTE ----------
 function openTranslatePanel(iconName, romaji) {
   const content = createFloatingBox(iconName);
   const input = document.createElement("input");
@@ -467,7 +444,6 @@ function openTranslatePanel(iconName, romaji) {
   goBtn.innerHTML = icon("send");
   goBtn.addEventListener("mousedown", (e) => e.preventDefault());
   const resultWrap = document.createElement("div");
-
   goBtn.onclick = async () => {
     resultWrap.innerHTML = "<div class='media-loading'>Translating\u2026</div>";
     const sys = romaji
@@ -482,7 +458,6 @@ function openTranslatePanel(iconName, romaji) {
   content.append(input, goBtn, resultWrap);
 }
 
-// ---------- JW ----------
 const JW_PHRASES = [
   ["Thank you","Arigatou"],["Thank you very much","Arigatou gozaimasu"],["You're welcome","Dou itashimashite"],
   ["Sorry / Excuse me","Sumimasen"],["I'm sorry","Gomen nasai"],["Yes","Hai"],["No","Iie"],
@@ -506,7 +481,6 @@ const JW_PHRASES = [
   ["I miss you","Aitai"],["Take care","Odaiji ni"],["Nice work / good job","Otsukaresama"],
   ["No way!","Uso"],["Amazing","Subarashii"],
 ];
-
 function openJwPanel() {
   const content = createFloatingBox("jw");
   const search = document.createElement("input");
@@ -516,7 +490,6 @@ function openJwPanel() {
   search.placeholder = "Search phrases";
   const list = document.createElement("div");
   list.className = "jw-list";
-
   function renderList(filter) {
     list.innerHTML = "";
     const f = filter.toLowerCase();
@@ -540,15 +513,10 @@ function openJwPanel() {
   content.append(search, list);
 }
 
-/* =========================================================
-   CLIPBOARD PANEL
-   ========================================================= */
-
 function openClipboardPanel() {
   const content = createFloatingBox("clipboard");
   const list = document.createElement("div");
   list.className = "jw-list";
-
   function render() {
     list.innerHTML = "";
     const clips = getClips();
@@ -573,7 +541,7 @@ function openClipboardPanel() {
 }
 
 /* =========================================================
-   EMOJI / GIF / STICKER / SAVED - now a floating box
+   EMOJI / GIF / STICKER / SAVED
    ========================================================= */
 
 const CURATED_EMOJI = [
@@ -621,7 +589,6 @@ let currentEmojiTab = "emoji";
 function openEmojiPanel() {
   const content = createFloatingBox("emoji");
   content.classList.add("emoji-panel");
-
   const tabs = document.createElement("div");
   tabs.id = "emojiTabs";
   const search = document.createElement("input");
@@ -632,7 +599,6 @@ function openEmojiPanel() {
   search.autocomplete = "off";
   const grid = document.createElement("div");
   grid.id = "emojiGrid";
-
   content.append(tabs, search, grid);
 
   function setTab(id) {
@@ -647,13 +613,10 @@ function openEmojiPanel() {
       tabs.appendChild(b);
     });
     search.value = "";
-    search.placeholder = tid_placeholder(id);
+    search.placeholder = id === "emoji" ? "Search emoji" : id === "gif" ? "Search GIFs" : id === "sticker" ? "Search stickers" : "Saved";
     if (id === "emoji") renderEmojiGrid(grid, ALL_EMOJI);
     else if (id === "saved") renderSavedGrid(grid);
     else renderMediaGrid(grid, id, "");
-  }
-  function tid_placeholder(id) {
-    return id === "emoji" ? "Search emoji" : id === "gif" ? "Search GIFs" : id === "sticker" ? "Search stickers" : "Saved";
   }
 
   let searchDebounce;
