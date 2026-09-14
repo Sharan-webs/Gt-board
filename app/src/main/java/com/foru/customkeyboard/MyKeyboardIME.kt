@@ -23,12 +23,14 @@ class MyKeyboardIME : InputMethodService() {
 
     private lateinit var webView: WebView
 
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreateInputView(): View {
         webView = WebView(this)
         webView.layoutParams = ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
+            dp(NORMAL_HEIGHT_DP)
         )
 
         val settings = webView.settings
@@ -42,6 +44,22 @@ class MyKeyboardIME : InputMethodService() {
         webView.loadUrl("file:///android_asset/index.html")
 
         return webView
+    }
+
+    private fun setKeyboardHeightDp(heightDp: Int) {
+        Handler(Looper.getMainLooper()).post {
+            if (::webView.isInitialized) {
+                val lp = webView.layoutParams
+                lp.height = dp(heightDp)
+                webView.layoutParams = lp
+                webView.requestLayout()
+            }
+        }
+    }
+
+    companion object {
+        const val NORMAL_HEIGHT_DP = 270
+        const val EXPANDED_HEIGHT_DP = 480
     }
 
     // Everything the web UI calls to actually type into whatever app is focused
@@ -66,6 +84,16 @@ class MyKeyboardIME : InputMethodService() {
         @JavascriptInterface
         fun switchToPreviousIme() {
             switchToPreviousInputMethod()
+        }
+
+        @JavascriptInterface
+        fun expandKeyboard() {
+            setKeyboardHeightDp(EXPANDED_HEIGHT_DP)
+        }
+
+        @JavascriptInterface
+        fun collapseKeyboard() {
+            setKeyboardHeightDp(NORMAL_HEIGHT_DP)
         }
 
         // Called from JS when the user taps a GIF/sticker. Downloads it and

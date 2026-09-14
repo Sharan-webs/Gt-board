@@ -25,18 +25,20 @@
     <div id="view-letters" class="kb-view active"></div>
     <div id="view-numsym" class="kb-view"></div>
     <div id="view-symbols2" class="kb-view"></div>
+
     <div id="view-emoji" class="kb-view">
       <div id="emojiTabs"></div>
       <div id="emojiSearchWrap">
-        <input id="emojiSearch" type="text" placeholder="Search emoji, GIFs, stickers">
+        <input id="emojiSearch" class="local-typable" type="text" placeholder="Search" inputmode="none" autocomplete="off">
       </div>
       <div id="emojiGrid"></div>
+      <div id="emojiKeys"></div>
     </div>
   </div>
 
-</div>
+  <div id="floatingLayer"></div>
 
-<div id="floatingLayer"></div>
+</div>
 
 <script src="app.js"></script>
 </body>
