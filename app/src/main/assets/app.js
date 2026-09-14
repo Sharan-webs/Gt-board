@@ -1,5 +1,5 @@
 /* =========================================================
-   GT KEYBOARD - core app logic
+   GT KEYBOARD - core app logic (v3: floating-box UI)
    ========================================================= */
 
 const GIPHY_KEY = "x3lgplS4mV35AlgS0ROivHNJAxz3E7j8";
@@ -11,44 +11,65 @@ const Bridge = {
   commitGif: (url, mime) => window.Android ? Android.commitGif(url, mime) : console.log("GIF:", url),
   expand: () => window.Android ? Android.expandKeyboard() : console.log("EXPAND"),
   collapse: () => window.Android ? Android.collapseKeyboard() : console.log("COLLAPSE"),
+  pickTheme: () => window.Android ? Android.requestThemeImage() : console.log("PICK THEME"),
+};
+
+// called from native once a theme image is saved
+window.applyThemeBackground = function (fileUrl) {
+  document.getElementById("kb-root").style.backgroundImage =
+    `linear-gradient(180deg, rgba(10,11,14,0.78), rgba(10,11,14,0.88)), url("${fileUrl}")`;
+  document.getElementById("kb-root").style.backgroundSize = "cover";
+  document.getElementById("kb-root").style.backgroundPosition = "center";
 };
 
 /* =========================================================
-   LOCAL TYPING ENGINE
-   Any tap on our own keys either (a) types into the app the
-   user is really typing into, or (b) types into one of our
-   OWN inputs (emoji search, AI box, translate boxes) when one
-   of those is focused. This is what makes search/AI typing
-   actually work from inside our own keyboard.
+   ICONS (inline SVG, no text labels anywhere)
    ========================================================= */
 
-let activeLocalField = null; // the local <input>/<textarea> currently "focused" for our purposes
+const ICONS = {
+  gt: `<svg viewBox="0 0 24 24" class="ic ic-gt"><path d="M13 2 3 14h7l-1 8 11-13h-7z"/></svg>`,
+  ai: `<svg viewBox="0 0 24 24" class="ic ic-ai"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>`,
+  jw: `<svg viewBox="0 0 24 24" class="ic ic-jw"><path d="M4 5c3-1 5-1 8 0v14c-3-1-5-1-8 0z"/><path d="M20 5c-3-1-5-1-8 0v14c3-1 5-1 8 0z"/></svg>`,
+  jt: `<svg viewBox="0 0 24 24" class="ic ic-jt"><path d="M4 7h9M8 4v3c0 5-2 8-5 10"/><path d="M13 10c1 3 3 5 7 6"/><path d="M14 20l4-9 4 9M15.6 17h4.8"/></svg>`,
+  jte: `<svg viewBox="0 0 24 24" class="ic ic-jte"><path d="M3 6h7M6.5 4v2.4c0 3.6-1.4 5.7-3.5 7"/><path d="M9 8.5c.7 2.3 2 3.8 4.5 4.6"/><text x="13" y="19" font-size="10" font-weight="700" fill="currentColor" stroke="none">A</text></svg>`,
+  clipboard: `<svg viewBox="0 0 24 24" class="ic ic-clip"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6M9 15h6"/></svg>`,
+  theme: `<svg viewBox="0 0 24 24" class="ic ic-theme"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.6 1.6-1.3 0-.4-.2-.7-.4-1-.2-.3-.4-.6-.4-1 0-.7.6-1.3 1.3-1.3H16a4 4 0 0 0 4-4c0-5-3.6-9.4-8-9.4z"/><circle cx="7.5" cy="10.5" r="1.1"/><circle cx="10.5" cy="7" r="1.1"/><circle cx="15" cy="8" r="1.1"/><circle cx="16.5" cy="12" r="1.1"/></svg>`,
+  kill: `<svg viewBox="0 0 24 24" class="ic ic-kill"><path d="M12 3v8"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>`,
+  emoji: `<svg viewBox="0 0 24 24" class="ic ic-emoji"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1.1" fill="currentColor" stroke="none"/><path d="M8 14c1.2 1.5 2.6 2.2 4 2.2s2.8-.7 4-2.2"/></svg>`,
+  close: `<svg viewBox="0 0 24 24" class="ic ic-close"><path d="M5 5l14 14M19 5 5 19"/></svg>`,
+  drag: `<svg viewBox="0 0 24 24" class="ic ic-drag"><circle cx="8" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="16" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="8" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="1.4" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg>`,
+  send: `<svg viewBox="0 0 24 24" class="ic ic-send"><path d="M3 11l18-8-8 18-2.5-7.5z"/></svg>`,
+  trash: `<svg viewBox="0 0 24 24" class="ic ic-trash"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg>`,
+  copy: `<svg viewBox="0 0 24 24" class="ic ic-copy"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>`,
+  gif: `<svg viewBox="0 0 24 24" class="ic ic-gif"><rect x="3" y="6" width="18" height="12" rx="2"/><text x="6" y="15" font-size="7" font-weight="800" fill="currentColor" stroke="none">GIF</text></svg>`,
+  sticker: `<svg viewBox="0 0 24 24" class="ic ic-sticker"><path d="M4 12a8 8 0 0 1 8-8h4a4 4 0 0 1 4 4v4a8 8 0 0 1-8 8H8a4 4 0 0 1-4-4z"/><path d="M20 8h-3a3 3 0 0 1-3-3"/></svg>`,
+  star: `<svg viewBox="0 0 24 24" class="ic ic-star"><path d="M12 3l2.6 5.6 6 .6-4.5 4 1.3 6-5.4-3-5.4 3 1.3-6-4.5-4 6-.6z"/></svg>`,
+  backspace: `<svg viewBox="0 0 24 24" class="ic ic-back"><path d="M8 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-6-7z"/><path d="M12 10l5 5M17 10l-5 5"/></svg>`,
+  shift: `<svg viewBox="0 0 24 24" class="ic ic-shift"><path d="M12 3l7 8h-4v8H9v-8H5z"/></svg>`,
+};
+function icon(name) { return ICONS[name] || ""; }
+function iconBtn(el, name) { el.innerHTML = icon(name); }
 
+/* =========================================================
+   LOCAL TYPING ENGINE
+   ========================================================= */
+
+let activeLocalField = null;
 function markLocalField(el) { activeLocalField = el; }
 function clearLocalFieldIfMatches(el) { if (activeLocalField === el) activeLocalField = null; }
 
 function typeChar(ch) {
-  if (activeLocalField) {
-    insertIntoLocalField(activeLocalField, ch);
-  } else {
-    Bridge.commitText(ch);
-  }
+  if (activeLocalField) insertIntoLocalField(activeLocalField, ch);
+  else Bridge.commitText(ch);
 }
 function typeBackspace() {
-  if (activeLocalField) {
-    deleteFromLocalField(activeLocalField);
-  } else {
-    Bridge.deleteOne();
-  }
+  if (activeLocalField) deleteFromLocalField(activeLocalField);
+  else Bridge.deleteOne();
 }
 function typeEnter() {
-  if (activeLocalField) {
-    activeLocalField.dispatchEvent(new Event("gt-enter"));
-  } else {
-    Bridge.enter();
-  }
+  if (activeLocalField) activeLocalField.dispatchEvent(new Event("gt-enter"));
+  else Bridge.enter();
 }
-
 function insertIntoLocalField(el, text) {
   const start = el.selectionStart ?? el.value.length;
   const end = el.selectionEnd ?? el.value.length;
@@ -69,20 +90,12 @@ function deleteFromLocalField(el) {
   }
   el.dispatchEvent(new Event("input", { bubbles: true }));
 }
-
-// Any element with class "local-typable" routes keystrokes to itself while focused.
 document.addEventListener("focusin", (e) => {
-  if (e.target.classList && e.target.classList.contains("local-typable")) {
-    markLocalField(e.target);
-  }
+  if (e.target.classList?.contains("local-typable")) markLocalField(e.target);
 });
-document.addEventListener("focusout", (e) => {
-  clearLocalFieldIfMatches(e.target);
-});
-
-// Prevent our own key taps from stealing focus away from a local field.
+document.addEventListener("focusout", (e) => clearLocalFieldIfMatches(e.target));
 document.addEventListener("mousedown", (e) => {
-  if (e.target.closest(".key, .gt-mini, .gt-toggle, .emoji-tab, .emoji-cell")) {
+  if (e.target.closest(".key, .icon-btn, .emoji-tab, .emoji-cell")) {
     if (activeLocalField) e.preventDefault();
   }
 });
@@ -99,24 +112,48 @@ const GroqKey = {
 
 async function callGroq(systemPrompt, userText) {
   const key = GroqKey.get();
-  if (!key) throw new Error("No Groq API key saved yet. Paste your key above first.");
+  if (!key) throw new Error("No Groq API key saved yet.");
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
     body: JSON.stringify({
       model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userText },
-      ],
+      messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
     }),
   });
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error("Groq error " + res.status + ": " + errText.slice(0, 180));
-  }
+  if (!res.ok) throw new Error("Groq error " + res.status + ": " + (await res.text()).slice(0, 160));
   const data = await res.json();
   return data.choices?.[0]?.message?.content?.trim() || "(no response)";
+}
+
+/* =========================================================
+   CLIPBOARD (our own copy history - real system clipboard
+   can't be read in the background on modern Android, so we
+   track things copied via this keyboard's own copy buttons)
+   ========================================================= */
+
+function saveClip(text) {
+  const clips = JSON.parse(localStorage.getItem("clip_history") || "[]");
+  clips.unshift({ text, t: Date.now() });
+  localStorage.setItem("clip_history", JSON.stringify(clips.slice(0, 60)));
+}
+function getClips() { return JSON.parse(localStorage.getItem("clip_history") || "[]"); }
+function deleteClip(index) {
+  const clips = getClips();
+  clips.splice(index, 1);
+  localStorage.setItem("clip_history", JSON.stringify(clips));
+}
+
+function addLongPress(el, onLongPress, ms = 550) {
+  let timer = null;
+  const start = () => { timer = setTimeout(onLongPress, ms); };
+  const cancel = () => { if (timer) clearTimeout(timer); };
+  el.addEventListener("touchstart", start, { passive: true });
+  el.addEventListener("touchend", cancel);
+  el.addEventListener("touchmove", cancel);
+  el.addEventListener("mousedown", start);
+  el.addEventListener("mouseup", cancel);
+  el.addEventListener("mouseleave", cancel);
 }
 
 /* =========================================================
@@ -139,16 +176,20 @@ const SYMBOLS2_ROWS = [
   ["NUM","%","\u00a9","\u00ae","\u2122","\u2713","[","]","BACK"],
 ];
 
-let shiftOn = false;
-let capsLock = false;
-let lastShiftTap = 0;
-
+let shiftOn = false, capsLock = false, lastShiftTap = 0;
 function letterCase(ch) { return (shiftOn || capsLock) ? ch.toUpperCase() : ch; }
 
 function buildKey(label, displayOverride) {
   const b = document.createElement("button");
   b.className = "key";
   b.textContent = displayOverride ?? label;
+  b.dataset.key = label;
+  return b;
+}
+function buildIconKey(label, iconName, extraClass) {
+  const b = document.createElement("button");
+  b.className = "key key-func" + (extraClass ? " " + extraClass : "");
+  b.innerHTML = icon(iconName);
   b.dataset.key = label;
   return b;
 }
@@ -161,13 +202,10 @@ function renderLetters() {
     rowEl.className = "kb-row";
     row.forEach((k) => {
       if (k === "SHIFT") {
-        const b = buildKey("SHIFT", "\u21e7");
-        b.className = "key key-wide key-func" + (shiftOn || capsLock ? " key-active" : "");
+        const b = buildIconKey("SHIFT", "shift", "key-wide" + (shiftOn || capsLock ? " key-active" : ""));
         rowEl.appendChild(b);
       } else if (k === "BACK") {
-        const b = buildKey("BACK", "\u232b");
-        b.className = "key key-wide key-func";
-        rowEl.appendChild(b);
+        rowEl.appendChild(buildIconKey("BACK", "backspace", "key-wide"));
       } else {
         rowEl.appendChild(buildKey(k, letterCase(k)));
       }
@@ -176,7 +214,6 @@ function renderLetters() {
   });
   root.appendChild(buildBottomRow("view-letters"));
 }
-
 function renderGrid(containerId, rows, switchLabel, switchTarget) {
   const root = document.getElementById(containerId);
   root.innerHTML = "";
@@ -184,47 +221,35 @@ function renderGrid(containerId, rows, switchLabel, switchTarget) {
     const rowEl = document.createElement("div");
     rowEl.className = "kb-row";
     row.forEach((k) => {
-      if (k === "BACK") {
-        const b = buildKey("BACK", "\u232b");
-        b.className = "key key-wide key-func";
+      if (k === "BACK") { rowEl.appendChild(buildIconKey("BACK", "backspace", "key-wide")); }
+      else if (k === switchTarget) {
+        const b = buildKey(k, switchLabel); b.className = "key key-wide key-func";
         rowEl.appendChild(b);
-      } else if (k === switchTarget) {
-        const b = buildKey(k, switchLabel);
-        b.className = "key key-wide key-func";
-        rowEl.appendChild(b);
-      } else {
-        rowEl.appendChild(buildKey(k));
-      }
+      } else { rowEl.appendChild(buildKey(k)); }
     });
     root.appendChild(rowEl);
   });
   root.appendChild(buildBottomRow(containerId));
 }
-
 function buildBottomRow(fromView) {
   const rowEl = document.createElement("div");
   rowEl.className = "kb-row bottom-row";
   const abc = buildKey("TO_LETTERS", "ABC"); abc.className = "key key-wide key-func";
   const toNum = buildKey("TO_NUMSYM", "?123"); toNum.className = "key key-wide key-func";
-  const emoji = buildKey("TO_EMOJI", "\u263a"); emoji.className = "key key-func";
+  const emoji = buildIconKey("OPEN_EMOJI", "emoji");
   const space = buildKey("SPACE", "English"); space.className = "key key-space";
   const dot = buildKey(".", ".");
   const enter = buildKey("ENTER", "\u23ce"); enter.className = "key key-wide key-enter";
-
-  if (fromView === "view-letters") {
-    rowEl.append(toNum, emoji, space, enter);
-  } else {
-    rowEl.append(abc, emoji, space, dot, enter);
-  }
+  if (fromView === "view-letters") rowEl.append(toNum, emoji, space, enter);
+  else rowEl.append(abc, emoji, space, dot, enter);
   return rowEl;
 }
-
 function switchView(name) {
   document.querySelectorAll(".kb-view").forEach((v) => v.classList.remove("active"));
   document.getElementById(name).classList.add("active");
 }
 
-document.getElementById("kb-root").addEventListener("click", (e) => {
+document.getElementById("keysArea").addEventListener("click", (e) => {
   const btn = e.target.closest(".key");
   if (!btn) return;
   const key = btn.dataset.key;
@@ -232,7 +257,7 @@ document.getElementById("kb-root").addEventListener("click", (e) => {
   if (key === "SHIFT") {
     const now = Date.now();
     if (now - lastShiftTap < 350) { capsLock = !capsLock; shiftOn = false; }
-    else { shiftOn = !shiftOn; }
+    else shiftOn = !shiftOn;
     lastShiftTap = now;
     renderLetters();
     return;
@@ -244,7 +269,7 @@ document.getElementById("kb-root").addEventListener("click", (e) => {
   if (key === "TO_NUMSYM") { switchView("view-numsym"); return; }
   if (key === "SYM2") { switchView("view-symbols2"); return; }
   if (key === "NUM") { switchView("view-numsym"); return; }
-  if (key === "TO_EMOJI") { switchView("view-emoji"); renderEmojiTabActive(); return; }
+  if (key === "OPEN_EMOJI") { openEmojiPanel(); return; }
 
   const ch = key.length === 1 ? letterCase(key) : key;
   typeChar(ch);
@@ -256,50 +281,299 @@ renderGrid("view-numsym", NUMSYM_ROWS, "?123", "SYM2");
 renderGrid("view-symbols2", SYMBOLS2_ROWS, "?123", "NUM");
 
 /* =========================================================
-   MINI KEYBOARD embedded inside the emoji/GIF/sticker panel
-   so search actually works without leaving that tab
+   ICON BUTTONS SETUP (topbar)
    ========================================================= */
 
-const MINI_ROWS = [
-  ["q","w","e","r","t","y","u","i","o","p"],
-  ["a","s","d","f","g","h","j","k","l"],
-  ["z","x","c","v","b","n","m","BACK"],
-];
+iconBtn(document.getElementById("gtBtn"), "gt");
+document.querySelectorAll('.gt-mini[data-panel]').forEach((btn) => {
+  iconBtn(btn, btn.dataset.panel);
+  btn.addEventListener("click", () => openPanel(btn.dataset.panel));
+});
+iconBtn(document.getElementById("clipboardBtn"), "clipboard");
+iconBtn(document.getElementById("themeBtn"), "theme");
+iconBtn(document.getElementById("killGt"), "kill");
 
-function renderEmojiKeys() {
-  const root = document.getElementById("emojiKeys");
-  root.innerHTML = "";
-  MINI_ROWS.forEach((row) => {
-    const rowEl = document.createElement("div");
-    rowEl.className = "kb-row";
-    row.forEach((k) => {
-      const b = document.createElement("button");
-      b.className = "key" + (k === "BACK" ? " key-wide key-func" : "");
-      b.textContent = k === "BACK" ? "\u232b" : k;
-      b.addEventListener("mousedown", (e) => e.preventDefault());
-      b.addEventListener("click", () => {
-        if (k === "BACK") typeBackspace();
-        else typeChar(k);
-      });
-      rowEl.appendChild(b);
-    });
-    root.appendChild(rowEl);
-  });
-  const spaceRow = document.createElement("div");
-  spaceRow.className = "kb-row";
-  const space = document.createElement("button");
-  space.className = "key key-space";
-  space.textContent = "space";
-  space.addEventListener("mousedown", (e) => e.preventDefault());
-  space.addEventListener("click", () => typeChar(" "));
-  spaceRow.appendChild(space);
-  root.appendChild(spaceRow);
-}
-renderEmojiKeys();
+document.getElementById("clipboardBtn").addEventListener("click", openClipboardPanel);
+document.getElementById("themeBtn").addEventListener("click", () => Bridge.pickTheme());
 
 /* =========================================================
-   EMOJI DATA - curated searchable set + generated Unicode
-   ranges for 1000+ total browsing.
+   GT MODE
+   ========================================================= */
+
+const body = document.body;
+let gtModeOn = false;
+document.getElementById("gtBtn").addEventListener("click", () => {
+  gtModeOn = !gtModeOn;
+  body.classList.toggle("gt-mode", gtModeOn);
+  document.getElementById("gtPanel").classList.toggle("hidden", !gtModeOn);
+});
+document.getElementById("killGt").addEventListener("click", () => {
+  gtModeOn = false;
+  body.classList.remove("gt-mode");
+  document.getElementById("gtPanel").classList.add("hidden");
+  closeFloatingBox();
+});
+
+/* =========================================================
+   FLOATING PANELS - CA / JW / JT / JTE / Emoji / Clipboard
+   All share one mechanism: keyboard height grows so the box
+   has real room above the (unchanged-size) key rows, with a
+   visible gap between box and keys. Alphabet keys are NEVER
+   hidden - closing the box just reveals them again.
+   ========================================================= */
+
+function closeFloatingBox() {
+  document.getElementById("floatingLayer").innerHTML = "";
+  Bridge.collapse();
+}
+
+function createFloatingBox(iconName) {
+  closeFloatingBox();
+  Bridge.expand();
+
+  const layer = document.getElementById("floatingLayer");
+  const box = document.createElement("div");
+  box.className = "float-box";
+
+  const header = document.createElement("div");
+  header.className = "float-header";
+  const drag = document.createElement("span");
+  drag.className = "drag-handle";
+  drag.innerHTML = icon("drag");
+  const titleIcon = document.createElement("span");
+  titleIcon.className = "float-title-icon";
+  titleIcon.innerHTML = icon(iconName);
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "icon-btn float-close";
+  closeBtn.innerHTML = icon("close");
+  closeBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  closeBtn.onclick = () => closeFloatingBox();
+  header.append(drag, titleIcon, closeBtn);
+
+  const content = document.createElement("div");
+  content.className = "float-content";
+
+  box.append(header, content);
+  layer.appendChild(box);
+  makeDraggable(box, drag);
+  return content;
+}
+
+function makeDraggable(box, handle) {
+  let sx = 0, sy = 0, ox = 0, oy = 0, dragging = false;
+  handle.addEventListener("touchstart", (e) => {
+    dragging = true;
+    const t = e.touches[0];
+    sx = t.clientX; sy = t.clientY;
+    const rect = box.getBoundingClientRect();
+    const parentRect = box.parentElement.getBoundingClientRect();
+    ox = rect.left - parentRect.left; oy = rect.top - parentRect.top;
+  });
+  handle.addEventListener("touchmove", (e) => {
+    if (!dragging) return;
+    const t = e.touches[0];
+    box.style.left = (ox + (t.clientX - sx)) + "px";
+    box.style.top = (oy + (t.clientY - sy)) + "px";
+    box.style.right = "auto";
+    box.style.bottom = "auto";
+    e.preventDefault();
+  }, { passive: false });
+  handle.addEventListener("touchend", () => dragging = false);
+}
+
+function copyBoxHTML(text) {
+  const wrap = document.createElement("div");
+  wrap.className = "copy-box";
+  const p = document.createElement("div");
+  p.className = "copy-text";
+  p.textContent = text;
+  const btn = document.createElement("button");
+  btn.className = "icon-btn copy-btn";
+  btn.innerHTML = icon("copy");
+  btn.addEventListener("mousedown", (e) => e.preventDefault());
+  btn.onclick = () => {
+    navigator.clipboard?.writeText(text);
+    saveClip(text);
+    btn.classList.add("copied");
+    setTimeout(() => btn.classList.remove("copied"), 900);
+  };
+  wrap.append(p, btn);
+  return wrap;
+}
+
+function openPanel(name) {
+  if (name === "ai") openAiPanel();
+  if (name === "jw") openJwPanel();
+  if (name === "jt") openTranslatePanel("jt", false);
+  if (name === "jte") openTranslatePanel("jte", true);
+}
+
+// ---------- CA ----------
+function openAiPanel() {
+  const content = createFloatingBox("ai");
+  const keyRow = document.createElement("div");
+  keyRow.className = "ai-key-row";
+  const keyInput = document.createElement("input");
+  keyInput.className = "local-typable";
+  keyInput.type = "password";
+  keyInput.inputMode = "none";
+  keyInput.placeholder = "Groq API key";
+  keyInput.value = GroqKey.get();
+  const saveBtn = document.createElement("button");
+  saveBtn.className = "pill-btn";
+  saveBtn.textContent = GroqKey.get() ? "\u2713" : "Save";
+  saveBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  saveBtn.onclick = () => { GroqKey.set(keyInput.value.trim()); saveBtn.textContent = "\u2713"; };
+  const delBtn = document.createElement("button");
+  delBtn.className = "icon-btn pill-btn-icon";
+  delBtn.innerHTML = icon("trash");
+  delBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  delBtn.onclick = () => { GroqKey.clear(); keyInput.value = ""; saveBtn.textContent = "Save"; };
+  keyRow.append(keyInput, saveBtn, delBtn);
+
+  const input = document.createElement("textarea");
+  input.className = "ai-input local-typable";
+  input.inputMode = "none";
+  input.placeholder = "Ask the AI anything...";
+
+  const sendBtn = document.createElement("button");
+  sendBtn.className = "icon-btn ai-send";
+  sendBtn.innerHTML = icon("send");
+  sendBtn.addEventListener("mousedown", (e) => e.preventDefault());
+
+  const resultWrap = document.createElement("div");
+  sendBtn.onclick = async () => {
+    resultWrap.innerHTML = "<div class='media-loading'>Thinking\u2026</div>";
+    try {
+      const reply = await callGroq("You are a helpful, concise assistant inside a keyboard app.", input.value);
+      resultWrap.innerHTML = "";
+      resultWrap.appendChild(copyBoxHTML(reply));
+    } catch (err) { resultWrap.innerHTML = `<div class='media-loading'>${err.message}</div>`; }
+  };
+
+  content.append(keyRow, input, sendBtn, resultWrap);
+}
+
+// ---------- JT / JTE ----------
+function openTranslatePanel(iconName, romaji) {
+  const content = createFloatingBox(iconName);
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "ai-input local-typable";
+  input.inputMode = "none";
+  input.placeholder = "Type English text";
+  const goBtn = document.createElement("button");
+  goBtn.className = "icon-btn ai-send";
+  goBtn.innerHTML = icon("send");
+  goBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  const resultWrap = document.createElement("div");
+
+  goBtn.onclick = async () => {
+    resultWrap.innerHTML = "<div class='media-loading'>Translating\u2026</div>";
+    const sys = romaji
+      ? "Translate the user's English text to Japanese, but output ONLY romaji (English letters). No Japanese script, no explanation."
+      : "Translate the user's English text to natural Japanese. Output ONLY the translation, no explanation.";
+    try {
+      const reply = await callGroq(sys, input.value);
+      resultWrap.innerHTML = "";
+      resultWrap.appendChild(copyBoxHTML(reply));
+    } catch (err) { resultWrap.innerHTML = `<div class='media-loading'>${err.message}</div>`; }
+  };
+  content.append(input, goBtn, resultWrap);
+}
+
+// ---------- JW ----------
+const JW_PHRASES = [
+  ["Thank you","Arigatou"],["Thank you very much","Arigatou gozaimasu"],["You're welcome","Dou itashimashite"],
+  ["Sorry / Excuse me","Sumimasen"],["I'm sorry","Gomen nasai"],["Yes","Hai"],["No","Iie"],
+  ["Good morning","Ohayou gozaimasu"],["Good afternoon","Konnichiwa"],["Good evening","Konbanwa"],
+  ["Good night","Oyasumi nasai"],["Goodbye","Sayounara"],["See you later","Mata ne"],
+  ["Nice to meet you","Hajimemashite"],["How are you?","Ogenki desu ka"],["I'm fine","Genki desu"],
+  ["Please","Onegaishimasu"],["What is this?","Kore wa nan desu ka"],["I don't understand","Wakarimasen"],
+  ["I understand","Wakarimashita"],["Do you speak English?","Eigo wo hanasemasu ka"],
+  ["What's your name?","Onamae wa nan desu ka"],["How much is this?","Kore wa ikura desu ka"],
+  ["Where is the bathroom?","Toire wa doko desu ka"],["Help me","Tasukete"],["I love you","Aishiteru"],
+  ["I like you","Suki desu"],["Cute","Kawaii"],["Cool / Awesome","Sugoi"],["Delicious","Oishii"],
+  ["Let's go","Ikimashou"],["Wait a moment","Chotto matte"],["I'm hungry","Onaka ga suita"],
+  ["I'm tired","Tsukareta"],["Good luck","Ganbatte"],["Congratulations","Omedetou"],["Welcome","Youkoso"],
+  ["Today","Kyou"],["Tomorrow","Ashita"],["Yesterday","Kinou"],["Now","Ima"],["Later","Atode"],
+  ["Friend","Tomodachi"],["Family","Kazoku"],["Water","Mizu"],["Food","Tabemono"],["Money","Okane"],
+  ["School","Gakkou"],["Home","Ie"],["Work","Shigoto"],["I'm happy","Ureshii"],["I'm sad","Kanashii"],
+  ["It's okay / no problem","Daijoubu"],["Really?","Honto"],["Of course","Mochiron"],
+  ["I'm coming","Ikimasu"],["I'm leaving","Ittekimasu"],["I'm back","Tadaima"],["Welcome back","Okaeri"],
+  ["Cheers!","Kanpai"],["One","Ichi"],["Two","Ni"],["Three","San"],["Four","Yon"],["Five","Go"],
+  ["Six","Roku"],["Seven","Nana"],["Eight","Hachi"],["Nine","Kyuu"],["Ten","Juu"],
+  ["I miss you","Aitai"],["Take care","Odaiji ni"],["Nice work / good job","Otsukaresama"],
+  ["No way!","Uso"],["Amazing","Subarashii"],
+];
+
+function openJwPanel() {
+  const content = createFloatingBox("jw");
+  const search = document.createElement("input");
+  search.type = "text";
+  search.className = "ai-input local-typable";
+  search.inputMode = "none";
+  search.placeholder = "Search phrases";
+  const list = document.createElement("div");
+  list.className = "jw-list";
+
+  function renderList(filter) {
+    list.innerHTML = "";
+    const f = filter.toLowerCase();
+    JW_PHRASES.filter(([en, jp]) => !f || en.toLowerCase().includes(f) || jp.toLowerCase().includes(f))
+      .forEach(([en, jp]) => {
+        const row = document.createElement("div");
+        row.className = "jw-row";
+        const text = document.createElement("div");
+        text.innerHTML = `<div class="jw-en">${en}</div><div class="jw-jp">${jp}</div>`;
+        const btn = document.createElement("button");
+        btn.className = "icon-btn copy-btn";
+        btn.innerHTML = icon("copy");
+        btn.addEventListener("mousedown", (e) => e.preventDefault());
+        btn.onclick = () => { navigator.clipboard?.writeText(jp); saveClip(jp); btn.classList.add("copied"); setTimeout(() => btn.classList.remove("copied"), 800); };
+        row.append(text, btn);
+        list.appendChild(row);
+      });
+  }
+  search.addEventListener("input", () => renderList(search.value));
+  renderList("");
+  content.append(search, list);
+}
+
+/* =========================================================
+   CLIPBOARD PANEL
+   ========================================================= */
+
+function openClipboardPanel() {
+  const content = createFloatingBox("clipboard");
+  const list = document.createElement("div");
+  list.className = "jw-list";
+
+  function render() {
+    list.innerHTML = "";
+    const clips = getClips();
+    if (clips.length === 0) {
+      list.innerHTML = "<div class='media-loading'>Nothing copied yet \u2014 items you copy in AI/JW get saved here. Hold to delete.</div>";
+      return;
+    }
+    clips.forEach((c, i) => {
+      const row = document.createElement("div");
+      row.className = "jw-row clip-row";
+      const text = document.createElement("div");
+      text.className = "clip-text";
+      text.textContent = c.text;
+      row.appendChild(text);
+      row.addEventListener("click", () => typeChar(c.text));
+      addLongPress(row, () => { deleteClip(i); render(); });
+      list.appendChild(row);
+    });
+  }
+  render();
+  content.appendChild(list);
+}
+
+/* =========================================================
+   EMOJI / GIF / STICKER / SAVED - now a floating box
    ========================================================= */
 
 const CURATED_EMOJI = [
@@ -329,12 +603,7 @@ const CURATED_EMOJI = [
   ["\ud83d\udc51","crown king queen"],["\ud83d\udc09","dragon"],["\ud83e\udd77","ninja"],["\ud83e\udd16","robot ai bot"],
   ["\ud83c\uddef\ud83c\uddf5","flag japan"],["\ud83c\uddee\ud83c\uddf3","flag india"],["\ud83c\uddfa\ud83c\uddf8","flag usa"],
 ];
-
-const RANGE_BLOCKS = [
-  [0x1F600, 0x1F64F], [0x1F300, 0x1F5FF], [0x1F680, 0x1F6FF],
-  [0x1F900, 0x1F9FF], [0x1FA70, 0x1FAFF], [0x2600, 0x26FF], [0x2700, 0x27BF],
-];
-
+const RANGE_BLOCKS = [[0x1F600,0x1F64F],[0x1F300,0x1F5FF],[0x1F680,0x1F6FF],[0x1F900,0x1F9FF],[0x1FA70,0x1FAFF],[0x2600,0x26FF],[0x2700,0x27BF]];
 function buildFullEmojiList() {
   const seen = new Set(CURATED_EMOJI.map(([ch]) => ch));
   const list = [...CURATED_EMOJI];
@@ -347,35 +616,61 @@ function buildFullEmojiList() {
   return list;
 }
 const ALL_EMOJI = buildFullEmojiList();
-
 let currentEmojiTab = "emoji";
 
-function renderEmojiTabActive() {
-  const tabs = document.getElementById("emojiTabs");
-  tabs.innerHTML = "";
-  [["emoji","Emoji"],["gif","GIF"],["sticker","Sticker"],["saved","Saved"]].forEach(([id,label]) => {
-    const b = document.createElement("button");
-    b.textContent = label;
-    b.className = "emoji-tab" + (currentEmojiTab === id ? " active" : "");
-    b.addEventListener("mousedown", (e) => e.preventDefault());
-    b.onclick = () => { currentEmojiTab = id; renderEmojiTabActive(); };
-    tabs.appendChild(b);
+function openEmojiPanel() {
+  const content = createFloatingBox("emoji");
+  content.classList.add("emoji-panel");
+
+  const tabs = document.createElement("div");
+  tabs.id = "emojiTabs";
+  const search = document.createElement("input");
+  search.id = "emojiSearch";
+  search.className = "local-typable";
+  search.type = "text";
+  search.inputMode = "none";
+  search.autocomplete = "off";
+  const grid = document.createElement("div");
+  grid.id = "emojiGrid";
+
+  content.append(tabs, search, grid);
+
+  function setTab(id) {
+    currentEmojiTab = id;
+    tabs.innerHTML = "";
+    [["emoji","emoji"],["gif","gif"],["sticker","sticker"],["saved","star"]].forEach(([tid, ic]) => {
+      const b = document.createElement("button");
+      b.className = "icon-btn emoji-tab" + (currentEmojiTab === tid ? " active" : "");
+      b.innerHTML = icon(ic);
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+      b.onclick = () => setTab(tid);
+      tabs.appendChild(b);
+    });
+    search.value = "";
+    search.placeholder = tid_placeholder(id);
+    if (id === "emoji") renderEmojiGrid(grid, ALL_EMOJI);
+    else if (id === "saved") renderSavedGrid(grid);
+    else renderMediaGrid(grid, id, "");
+  }
+  function tid_placeholder(id) {
+    return id === "emoji" ? "Search emoji" : id === "gif" ? "Search GIFs" : id === "sticker" ? "Search stickers" : "Saved";
+  }
+
+  let searchDebounce;
+  search.addEventListener("input", (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    clearTimeout(searchDebounce);
+    if (currentEmojiTab === "emoji") {
+      renderEmojiGrid(grid, q ? ALL_EMOJI.filter(([, kw]) => kw && kw.includes(q)) : ALL_EMOJI);
+    } else if (currentEmojiTab === "gif" || currentEmojiTab === "sticker") {
+      searchDebounce = setTimeout(() => renderMediaGrid(grid, currentEmojiTab, q), 400);
+    }
   });
 
-  const searchBox = document.getElementById("emojiSearch");
-  searchBox.value = "";
-  searchBox.placeholder = currentEmojiTab === "emoji" ? "Search " + ALL_EMOJI.length + "+ emoji"
-    : currentEmojiTab === "gif" ? "Search GIFs"
-    : currentEmojiTab === "sticker" ? "Search stickers"
-    : "Saved items";
-
-  if (currentEmojiTab === "emoji") renderEmojiGrid(ALL_EMOJI);
-  else if (currentEmojiTab === "saved") renderSavedGrid();
-  else renderMediaGrid(currentEmojiTab, "");
+  setTab("emoji");
 }
 
-function renderEmojiGrid(list) {
-  const grid = document.getElementById("emojiGrid");
+function renderEmojiGrid(grid, list) {
   grid.innerHTML = "";
   grid.className = "emoji-grid-emoji";
   const frag = document.createDocumentFragment();
@@ -390,8 +685,7 @@ function renderEmojiGrid(list) {
   grid.appendChild(frag);
 }
 
-async function renderMediaGrid(kind, query) {
-  const grid = document.getElementById("emojiGrid");
+async function renderMediaGrid(grid, kind, query) {
   grid.className = "emoji-grid-media";
   grid.innerHTML = "<div class='media-loading'>Loading\u2026</div>";
   const endpoint = kind === "gif" ? "gifs" : "stickers";
@@ -409,31 +703,21 @@ async function renderMediaGrid(kind, query) {
       img.addEventListener("mousedown", (e) => e.preventDefault());
       img.onclick = () => {
         Bridge.commitGif(item.images.original.url, "image/gif");
-        saveToRecent(item.images.fixed_width_small.url, item.images.original.url);
+        const saved = JSON.parse(localStorage.getItem("saved_media") || "[]");
+        saved.unshift({ thumb: item.images.fixed_width_small.url, original: item.images.original.url });
+        localStorage.setItem("saved_media", JSON.stringify(saved.slice(0, 40)));
       };
       grid.appendChild(img);
     });
     if (!data.data || data.data.length === 0) grid.innerHTML = "<div class='media-loading'>No results</div>";
-  } catch (err) {
-    grid.innerHTML = "<div class='media-loading'>Couldn't load (check internet)</div>";
-  }
+  } catch (err) { grid.innerHTML = "<div class='media-loading'>Couldn't load (check internet)</div>"; }
 }
 
-function saveToRecent(thumb, original) {
-  const saved = JSON.parse(localStorage.getItem("saved_media") || "[]");
-  saved.unshift({ thumb, original });
-  localStorage.setItem("saved_media", JSON.stringify(saved.slice(0, 40)));
-}
-
-function renderSavedGrid() {
-  const grid = document.getElementById("emojiGrid");
+function renderSavedGrid(grid) {
   grid.className = "emoji-grid-media";
   const saved = JSON.parse(localStorage.getItem("saved_media") || "[]");
   grid.innerHTML = "";
-  if (saved.length === 0) {
-    grid.innerHTML = "<div class='media-loading'>Nothing saved yet</div>";
-    return;
-  }
+  if (saved.length === 0) { grid.innerHTML = "<div class='media-loading'>Nothing saved yet</div>"; return; }
   saved.forEach((item) => {
     const img = document.createElement("img");
     img.className = "media-cell";
@@ -442,297 +726,4 @@ function renderSavedGrid() {
     img.onclick = () => Bridge.commitGif(item.original, "image/gif");
     grid.appendChild(img);
   });
-}
-
-let searchDebounce;
-document.getElementById("emojiSearch").addEventListener("input", (e) => {
-  const q = e.target.value.trim().toLowerCase();
-  clearTimeout(searchDebounce);
-  if (currentEmojiTab === "emoji") {
-    const filtered = q ? ALL_EMOJI.filter(([, kw]) => kw && kw.includes(q)) : ALL_EMOJI;
-    renderEmojiGrid(filtered);
-  } else if (currentEmojiTab === "gif" || currentEmojiTab === "sticker") {
-    searchDebounce = setTimeout(() => renderMediaGrid(currentEmojiTab, q), 400);
-  }
-});
-
-/* =========================================================
-   GT MODE
-   ========================================================= */
-
-const body = document.body;
-let gtModeOn = false;
-
-document.getElementById("gtBtn").addEventListener("click", () => {
-  gtModeOn = !gtModeOn;
-  body.classList.toggle("gt-mode", gtModeOn);
-  document.getElementById("gtPanel").classList.toggle("hidden", !gtModeOn);
-});
-document.getElementById("killGt").addEventListener("click", () => {
-  gtModeOn = false;
-  body.classList.remove("gt-mode");
-  document.getElementById("gtPanel").classList.add("hidden");
-  closeFloatingBox();
-  Bridge.collapse();
-});
-document.querySelectorAll(".gt-mini[data-panel]").forEach((btn) => {
-  btn.addEventListener("click", () => openPanel(btn.dataset.panel));
-});
-
-/* =========================================================
-   FLOATING PANELS (CA / JW / JT / JTE)
-   Keyboard height expands so these are actually visible,
-   sitting above the normal key rows, draggable.
-   ========================================================= */
-
-function closeFloatingBox() {
-  const layer = document.getElementById("floatingLayer");
-  layer.innerHTML = "";
-}
-
-function createFloatingBox(title) {
-  closeFloatingBox();
-  Bridge.expand();
-
-  const layer = document.getElementById("floatingLayer");
-  const box = document.createElement("div");
-  box.className = "float-box";
-
-  const header = document.createElement("div");
-  header.className = "float-header";
-  const titleEl = document.createElement("span");
-  titleEl.textContent = title;
-  const closeBtn = document.createElement("button");
-  closeBtn.textContent = "\u2715";
-  closeBtn.className = "float-close";
-  closeBtn.addEventListener("mousedown", (e) => e.preventDefault());
-  closeBtn.onclick = () => { closeFloatingBox(); Bridge.collapse(); };
-  header.append(titleEl, closeBtn);
-
-  const content = document.createElement("div");
-  content.className = "float-content";
-
-  box.append(header, content);
-  layer.appendChild(box);
-  makeDraggable(box, header);
-  return content;
-}
-
-function makeDraggable(box, handle) {
-  let sx = 0, sy = 0, ox = 0, oy = 0, dragging = false;
-  handle.addEventListener("touchstart", (e) => {
-    dragging = true;
-    const t = e.touches[0];
-    sx = t.clientX; sy = t.clientY;
-    const rect = box.getBoundingClientRect();
-    const parentRect = box.parentElement.getBoundingClientRect();
-    ox = rect.left - parentRect.left; oy = rect.top - parentRect.top;
-  });
-  handle.addEventListener("touchmove", (e) => {
-    if (!dragging) return;
-    const t = e.touches[0];
-    const dx = t.clientX - sx, dy = t.clientY - sy;
-    box.style.left = (ox + dx) + "px";
-    box.style.top = (oy + dy) + "px";
-    box.style.right = "auto";
-    e.preventDefault();
-  }, { passive: false });
-  handle.addEventListener("touchend", () => dragging = false);
-}
-
-function copyBoxHTML(text) {
-  const wrap = document.createElement("div");
-  wrap.className = "copy-box";
-  const p = document.createElement("div");
-  p.className = "copy-text";
-  p.textContent = text;
-  const btn = document.createElement("button");
-  btn.className = "copy-btn";
-  btn.textContent = "Copy";
-  btn.addEventListener("mousedown", (e) => e.preventDefault());
-  btn.onclick = () => {
-    navigator.clipboard?.writeText(text);
-    btn.textContent = "Copied";
-    setTimeout(() => (btn.textContent = "Copy"), 1200);
-  };
-  wrap.append(p, btn);
-  return wrap;
-}
-
-function openPanel(name) {
-  if (name === "ai") openAiPanel();
-  if (name === "jw") openJwPanel();
-  if (name === "jt") openTranslatePanel("Eng to JP", false);
-  if (name === "jte") openTranslatePanel("Eng to JP (romaji)", true);
-}
-
-function makeMiniKeys(targetInput) {
-  const wrap = document.createElement("div");
-  wrap.className = "panel-keys";
-  const rows = [["q","w","e","r","t","y","u","i","o","p"],["a","s","d","f","g","h","j","k","l"],["z","x","c","v","b","n","m","BACK"]];
-  rows.forEach((row) => {
-    const rowEl = document.createElement("div");
-    rowEl.className = "kb-row";
-    row.forEach((k) => {
-      const b = document.createElement("button");
-      b.className = "key mini" + (k === "BACK" ? " key-func" : "");
-      b.textContent = k === "BACK" ? "\u232b" : k;
-      b.addEventListener("mousedown", (e) => e.preventDefault());
-      b.addEventListener("click", () => {
-        targetInput.focus();
-        if (k === "BACK") deleteFromLocalField(targetInput);
-        else insertIntoLocalField(targetInput, k);
-      });
-      rowEl.appendChild(b);
-    });
-    wrap.appendChild(rowEl);
-  });
-  const spaceRow = document.createElement("div");
-  spaceRow.className = "kb-row";
-  const space = document.createElement("button");
-  space.className = "key mini key-space";
-  space.textContent = "space";
-  space.addEventListener("mousedown", (e) => e.preventDefault());
-  space.addEventListener("click", () => { targetInput.focus(); insertIntoLocalField(targetInput, " "); });
-  spaceRow.appendChild(space);
-  wrap.appendChild(spaceRow);
-  return wrap;
-}
-
-// ---------- CA: Call AI ----------
-function openAiPanel() {
-  const content = createFloatingBox("Call AI");
-
-  const keyRow = document.createElement("div");
-  keyRow.className = "ai-key-row";
-  const keyInput = document.createElement("input");
-  keyInput.className = "local-typable";
-  keyInput.type = "password";
-  keyInput.inputMode = "none";
-  keyInput.placeholder = "Paste Groq API key";
-  keyInput.value = GroqKey.get();
-  const saveBtn = document.createElement("button");
-  saveBtn.textContent = GroqKey.get() ? "Saved" : "Save";
-  saveBtn.addEventListener("mousedown", (e) => e.preventDefault());
-  saveBtn.onclick = () => { GroqKey.set(keyInput.value.trim()); saveBtn.textContent = "Saved"; };
-  const delBtn = document.createElement("button");
-  delBtn.textContent = "Delete";
-  delBtn.addEventListener("mousedown", (e) => e.preventDefault());
-  delBtn.onclick = () => { GroqKey.clear(); keyInput.value = ""; saveBtn.textContent = "Save"; };
-  keyRow.append(keyInput, saveBtn, delBtn);
-
-  const input = document.createElement("textarea");
-  input.className = "ai-input local-typable";
-  input.inputMode = "none";
-  input.placeholder = "Ask the AI anything...";
-
-  const sendBtn = document.createElement("button");
-  sendBtn.className = "ai-send";
-  sendBtn.textContent = "Send";
-  sendBtn.addEventListener("mousedown", (e) => e.preventDefault());
-
-  const resultWrap = document.createElement("div");
-
-  sendBtn.onclick = async () => {
-    resultWrap.innerHTML = "<div class='media-loading'>Thinking\u2026</div>";
-    try {
-      const reply = await callGroq("You are a helpful, concise assistant inside a keyboard app.", input.value);
-      resultWrap.innerHTML = "";
-      resultWrap.appendChild(copyBoxHTML(reply));
-    } catch (err) {
-      resultWrap.innerHTML = `<div class='media-loading'>${err.message}</div>`;
-    }
-  };
-
-  content.append(keyRow, input, sendBtn, resultWrap, makeMiniKeys(input));
-}
-
-// ---------- JT / JTE ----------
-function openTranslatePanel(title, romaji) {
-  const content = createFloatingBox(title);
-  const input = document.createElement("input");
-  input.type = "text";
-  input.className = "ai-input local-typable";
-  input.inputMode = "none";
-  input.placeholder = "Type an English word or sentence";
-  const goBtn = document.createElement("button");
-  goBtn.className = "ai-send";
-  goBtn.textContent = "Translate";
-  goBtn.addEventListener("mousedown", (e) => e.preventDefault());
-  const resultWrap = document.createElement("div");
-
-  goBtn.onclick = async () => {
-    resultWrap.innerHTML = "<div class='media-loading'>Translating\u2026</div>";
-    const sys = romaji
-      ? "Translate the user's English text to Japanese, but output ONLY the Japanese written using romaji (English letters). No Japanese script, no explanation."
-      : "Translate the user's English text to natural Japanese. Output ONLY the Japanese translation, no explanation.";
-    try {
-      const reply = await callGroq(sys, input.value);
-      resultWrap.innerHTML = "";
-      resultWrap.appendChild(copyBoxHTML(reply));
-    } catch (err) {
-      resultWrap.innerHTML = `<div class='media-loading'>${err.message}</div>`;
-    }
-  };
-
-  content.append(input, goBtn, resultWrap, makeMiniKeys(input));
-}
-
-// ---------- JW ----------
-const JW_PHRASES = [
-  ["Thank you","Arigatou"],["Thank you very much","Arigatou gozaimasu"],["You're welcome","Dou itashimashite"],
-  ["Sorry / Excuse me","Sumimasen"],["I'm sorry","Gomen nasai"],["Yes","Hai"],["No","Iie"],
-  ["Good morning","Ohayou gozaimasu"],["Good afternoon","Konnichiwa"],["Good evening","Konbanwa"],
-  ["Good night","Oyasumi nasai"],["Goodbye","Sayounara"],["See you later","Mata ne"],
-  ["Nice to meet you","Hajimemashite"],["How are you?","Ogenki desu ka"],["I'm fine","Genki desu"],
-  ["Please","Onegaishimasu"],["What is this?","Kore wa nan desu ka"],["I don't understand","Wakarimasen"],
-  ["I understand","Wakarimashita"],["Do you speak English?","Eigo wo hanasemasu ka"],
-  ["What's your name?","Onamae wa nan desu ka"],["How much is this?","Kore wa ikura desu ka"],
-  ["Where is the bathroom?","Toire wa doko desu ka"],["Help me","Tasukete"],["I love you","Aishiteru"],
-  ["I like you","Suki desu"],["Cute","Kawaii"],["Cool / Awesome","Sugoi"],["Delicious","Oishii"],
-  ["Let's go","Ikimashou"],["Wait a moment","Chotto matte"],["I'm hungry","Onaka ga suita"],
-  ["I'm tired","Tsukareta"],["Good luck","Ganbatte"],["Congratulations","Omedetou"],["Welcome","Youkoso"],
-  ["Today","Kyou"],["Tomorrow","Ashita"],["Yesterday","Kinou"],["Now","Ima"],["Later","Atode"],
-  ["Friend","Tomodachi"],["Family","Kazoku"],["Water","Mizu"],["Food","Tabemono"],["Money","Okane"],
-  ["School","Gakkou"],["Home","Ie"],["Work","Shigoto"],["I'm happy","Ureshii"],["I'm sad","Kanashii"],
-  ["It's okay / no problem","Daijoubu"],["Really?","Honto"],["Of course","Mochiron"],
-  ["I'm coming","Ikimasu"],["I'm leaving","Ittekimasu"],["I'm back","Tadaima"],["Welcome back","Okaeri"],
-  ["Cheers!","Kanpai"],["One","Ichi"],["Two","Ni"],["Three","San"],["Four","Yon"],["Five","Go"],
-  ["Six","Roku"],["Seven","Nana"],["Eight","Hachi"],["Nine","Kyuu"],["Ten","Juu"],
-  ["I miss you","Aitai"],["Take care","Odaiji ni"],["Nice work / good job","Otsukaresama"],
-  ["No way!","Uso"],["Amazing","Subarashii"],
-];
-
-function openJwPanel() {
-  const content = createFloatingBox("Japanese Phrases");
-  const search = document.createElement("input");
-  search.type = "text";
-  search.className = "ai-input local-typable";
-  search.inputMode = "none";
-  search.placeholder = "Search phrases...";
-  const list = document.createElement("div");
-  list.className = "jw-list";
-
-  function renderList(filter) {
-    list.innerHTML = "";
-    const f = filter.toLowerCase();
-    JW_PHRASES.filter(([en, jp]) => !f || en.toLowerCase().includes(f) || jp.toLowerCase().includes(f))
-      .forEach(([en, jp]) => {
-        const row = document.createElement("div");
-        row.className = "jw-row";
-        const text = document.createElement("div");
-        text.innerHTML = `<div class="jw-en">${en}</div><div class="jw-jp">${jp}</div>`;
-        const btn = document.createElement("button");
-        btn.className = "copy-btn";
-        btn.textContent = "Copy";
-        btn.addEventListener("mousedown", (e) => e.preventDefault());
-        btn.onclick = () => { navigator.clipboard?.writeText(jp); btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy", 1000); };
-        row.append(text, btn);
-        list.appendChild(row);
-      });
-  }
-  search.addEventListener("input", () => renderList(search.value));
-  renderList("");
-
-  content.append(search, list, makeMiniKeys(search));
 }

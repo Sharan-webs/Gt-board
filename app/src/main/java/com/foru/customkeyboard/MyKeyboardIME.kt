@@ -1,9 +1,14 @@
 package com.foru.customkeyboard
 
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
 import android.content.ClipDescription
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.inputmethodservice.InputMethodService
 import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
@@ -12,7 +17,9 @@ import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.inputmethod.InputConnectionCompat
 import androidx.core.view.inputmethod.InputContentInfoCompat
@@ -22,6 +29,7 @@ import java.net.URL
 class MyKeyboardIME : InputMethodService() {
 
     private lateinit var webView: WebView
+    private var themeReceiver: BroadcastReceiver? = null
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
@@ -41,10 +49,47 @@ class MyKeyboardIME : InputMethodService() {
         settings.cacheMode = WebSettings.LOAD_DEFAULT
 
         webView.addJavascriptInterface(KeyboardBridge(), "Android")
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                applyStoredThemeIfAny()
+            }
+        }
         webView.loadUrl("file:///android_asset/index.html")
 
+        registerThemeReceiver()
         return webView
     }
+
+    private fun registerThemeReceiver() {
+        if (themeReceiver != null) return
+        themeReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                applyStoredThemeIfAny()
+            }
+        }
+        val filter = IntentFilter("com.foru.customkeyboard.THEME_UPDATED")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.registerReceiver(this, themeReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(themeReceiver, filter)
+        }
+    }
+
+    private fun applyStoredThemeIfAny() {
+        val file = File(filesDir, "theme_bg.png")
+        if (!::webView.isInitialized) return
+        Handler(Looper.getMainLooper()).post {
+            if (file.exists()) {
+                // cache-bust so the WebView doesn't reuse a stale cached image
+                val uri = "file://${file.absolutePath}?t=${System.currentTimeMillis()}"
+                webView.evaluateJavascript("window.applyThemeBackground && window.applyThemeBackground(${jsString(uri)});", null)
+            }
+        }
+    }
+
+    private fun jsString(s: String): String = "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
     private fun setKeyboardHeightDp(heightDp: Int) {
         Handler(Looper.getMainLooper()).post {
@@ -62,7 +107,6 @@ class MyKeyboardIME : InputMethodService() {
         const val EXPANDED_HEIGHT_DP = 480
     }
 
-    // Everything the web UI calls to actually type into whatever app is focused
     inner class KeyboardBridge {
 
         @JavascriptInterface
@@ -96,10 +140,13 @@ class MyKeyboardIME : InputMethodService() {
             setKeyboardHeightDp(NORMAL_HEIGHT_DP)
         }
 
-        // Called from JS when the user taps a GIF/sticker. Downloads it and
-        // sends it as real inline content - same mechanism Gboard uses.
-        // Falls back to a toast if the app the user is typing into (e.g. a
-        // plain text field) doesn't support inline images.
+        @JavascriptInterface
+        fun requestThemeImage() {
+            val intent = Intent(this@MyKeyboardIME, ThemePickerActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+        }
+
         @JavascriptInterface
         fun commitGif(url: String, mimeType: String) {
             val editorInfo = currentInputEditorInfo
@@ -147,6 +194,7 @@ class MyKeyboardIME : InputMethodService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        themeReceiver?.let { try { unregisterReceiver(it) } catch (e: Exception) {} }
         if (::webView.isInitialized) webView.destroy()
     }
 }

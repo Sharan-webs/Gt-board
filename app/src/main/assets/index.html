@@ -10,33 +10,28 @@
 <div id="kb-root">
 
   <div id="topbar">
-    <button id="gtBtn" class="gt-toggle">GT</button>
+    <button id="gtBtn" class="icon-btn gt-toggle" aria-label="GT mode"></button>
     <div id="gtPanel" class="gt-panel hidden">
-      <button class="gt-mini" data-panel="ai">CA</button>
-      <button class="gt-mini" data-panel="jw">JW</button>
-      <button class="gt-mini" data-panel="jt">JT</button>
-      <button class="gt-mini" data-panel="jte">JTE</button>
-      <button class="gt-mini gt-kill" id="killGt">Kill GT</button>
+      <button class="icon-btn gt-mini" data-panel="ai" aria-label="Call AI"></button>
+      <button class="icon-btn gt-mini" data-panel="jw" aria-label="Japanese phrases"></button>
+      <button class="icon-btn gt-mini" data-panel="jt" aria-label="Translate"></button>
+      <button class="icon-btn gt-mini" data-panel="jte" aria-label="Translate romaji"></button>
+      <button class="icon-btn gt-mini" id="clipboardBtn" aria-label="Clipboard"></button>
+      <button class="icon-btn gt-mini" id="themeBtn" aria-label="Theme"></button>
+      <button class="icon-btn gt-mini gt-kill" id="killGt" aria-label="Exit GT mode"></button>
     </div>
     <div id="langLabel">English</div>
   </div>
 
-  <div id="views">
+  <div id="stage">
+    <div id="floatingLayer"></div>
+  </div>
+
+  <div id="keysArea">
     <div id="view-letters" class="kb-view active"></div>
     <div id="view-numsym" class="kb-view"></div>
     <div id="view-symbols2" class="kb-view"></div>
-
-    <div id="view-emoji" class="kb-view">
-      <div id="emojiTabs"></div>
-      <div id="emojiSearchWrap">
-        <input id="emojiSearch" class="local-typable" type="text" placeholder="Search" inputmode="none" autocomplete="off">
-      </div>
-      <div id="emojiGrid"></div>
-      <div id="emojiKeys"></div>
-    </div>
   </div>
-
-  <div id="floatingLayer"></div>
 
 </div>
 
