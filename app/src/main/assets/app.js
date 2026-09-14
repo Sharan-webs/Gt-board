@@ -11,14 +11,6 @@ const Bridge = {
   commitGif: (url, mime) => window.Android ? Android.commitGif(url, mime) : console.log("GIF:", url),
   expand: () => window.Android ? Android.expandKeyboard() : console.log("EXPAND"),
   collapse: () => window.Android ? Android.collapseKeyboard() : console.log("COLLAPSE"),
-  pickTheme: () => window.Android ? Android.requestThemeImage() : console.log("PICK THEME"),
-};
-
-window.applyThemeBackground = function (fileUrl) {
-  const root = document.getElementById("kb-root");
-  root.style.backgroundImage = `linear-gradient(180deg, rgba(10,11,14,0.78), rgba(10,11,14,0.88)), url("${fileUrl}")`;
-  root.style.backgroundSize = "cover";
-  root.style.backgroundPosition = "center";
 };
 
 /* =========================================================
@@ -32,7 +24,6 @@ const ICONS = {
   jt: `<svg viewBox="0 0 24 24" class="ic ic-jt"><path d="M4 7h9M8 4v3c0 5-2 8-5 10"/><path d="M13 10c1 3 3 5 7 6"/><path d="M14 20l4-9 4 9M15.6 17h4.8"/></svg>`,
   jte: `<svg viewBox="0 0 24 24" class="ic ic-jte"><path d="M3 6h7M6.5 4v2.4c0 3.6-1.4 5.7-3.5 7"/><path d="M9 8.5c.7 2.3 2 3.8 4.5 4.6"/><text x="13" y="19" font-size="10" font-weight="700" fill="currentColor" stroke="none">A</text></svg>`,
   clipboard: `<svg viewBox="0 0 24 24" class="ic ic-clip"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6M9 15h6"/></svg>`,
-  theme: `<svg viewBox="0 0 24 24" class="ic ic-theme"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.6 1.6-1.3 0-.4-.2-.7-.4-1-.2-.3-.4-.6-.4-1 0-.7.6-1.3 1.3-1.3H16a4 4 0 0 0 4-4c0-5-3.6-9.4-8-9.4z"/><circle cx="7.5" cy="10.5" r="1.1"/><circle cx="10.5" cy="7" r="1.1"/><circle cx="15" cy="8" r="1.1"/><circle cx="16.5" cy="12" r="1.1"/></svg>`,
   kill: `<svg viewBox="0 0 24 24" class="ic ic-kill"><path d="M12 3v8"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>`,
   emoji: `<svg viewBox="0 0 24 24" class="ic ic-emoji"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1.1" fill="currentColor" stroke="none"/><path d="M8 14c1.2 1.5 2.6 2.2 4 2.2s2.8-.7 4-2.2"/></svg>`,
   close: `<svg viewBox="0 0 24 24" class="ic ic-close"><path d="M5 5l14 14M19 5 5 19"/></svg>`,
@@ -285,10 +276,8 @@ document.querySelectorAll('.gt-mini[data-panel]').forEach((btn) => {
   btn.addEventListener("click", () => openPanel(btn.dataset.panel));
 });
 iconBtn(document.getElementById("clipboardBtn"), "clipboard");
-iconBtn(document.getElementById("themeBtn"), "theme");
 iconBtn(document.getElementById("killGt"), "kill");
 document.getElementById("clipboardBtn").addEventListener("click", openClipboardPanel);
-document.getElementById("themeBtn").addEventListener("click", () => Bridge.pickTheme());
 
 /* =========================================================
    GT MODE

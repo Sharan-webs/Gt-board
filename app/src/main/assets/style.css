@@ -41,8 +41,6 @@ html, body { margin: 0; padding: 0; background: #0e0f13; font-family: -apple-sys
 @keyframes swap { 0%,100% { transform: translateX(0); } 50% { transform: translateX(2px); } }
 #clipboardBtn .ic { color: #b98cff; animation: clipBounce 2.4s ease-in-out infinite; }
 @keyframes clipBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-#themeBtn .ic { animation: hueRotate 4s linear infinite; }
-@keyframes hueRotate { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
 .gt-kill { border-color: rgba(255,107,107,0.4); margin-left: auto; }
 .gt-kill .ic { color: #ff6b6b; animation: killPulse 1.4s ease-in-out infinite; }
 @keyframes killPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }

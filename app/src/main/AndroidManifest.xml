@@ -22,12 +22,6 @@
                 android:resource="@xml/method" />
         </service>
 
-        <activity
-            android:name=".ThemePickerActivity"
-            android:exported="false"
-            android:theme="@style/TransparentTheme"
-            android:excludeFromRecents="true" />
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.foru.customkeyboard.fileprovider"
