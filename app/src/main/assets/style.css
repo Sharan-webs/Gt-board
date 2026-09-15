@@ -53,6 +53,11 @@ html, body { margin: 0; padding: 0; background: var(--bg-0); font-family: -apple
 
 .gt-panel { display: flex; gap: 6px; flex: 1; margin-left: 4px; overflow-x: auto; }
 .gt-panel.hidden { display: none; }
+.gt-panel:not(.hidden) { animation: gtPanelIn 160ms ease; }
+@keyframes gtPanelIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .gt-mini { color: var(--text-dim); padding: 8px; }
 .gt-kill { color: var(--bad); border-color: rgba(255,84,112,0.4); margin-left: auto; }
 
@@ -99,6 +104,12 @@ html, body { margin: 0; padding: 0; background: var(--bg-0); font-family: -apple
 @keyframes themeCycle {
   0% { filter: hue-rotate(0deg); }
   100% { filter: hue-rotate(360deg); }
+}
+
+.icon-settings { animation: gearSpin 5s linear infinite; transform-origin: center; }
+@keyframes gearSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .icon-kill { animation: killGlow 1.8s ease-in-out infinite; }
@@ -178,7 +189,11 @@ body.gt-mode .gt-toggle { color: var(--good); border-color: rgba(46,222,127,0.5)
 /* ---------- key rows (unchanged size, always visible) ---------- */
 #views { flex: 1 1 auto; min-height: 0; }
 .kb-view { display: none; height: 100%; }
-.kb-view.active { display: flex; flex-direction: column; justify-content: flex-end; }
+.kb-view.active { display: flex; flex-direction: column; justify-content: flex-end; animation: viewFade 140ms ease; }
+@keyframes viewFade {
+  from { opacity: 0.35; }
+  to { opacity: 1; }
+}
 
 .kb-row { display: flex; gap: 6px; margin-bottom: 7px; padding: 0 2px; }
 
@@ -263,6 +278,21 @@ body.gt-mode .gt-toggle { color: var(--good); border-color: rgba(46,222,127,0.5)
   display: flex; align-items: center; justify-content: center;
 }
 .ai-delete-key .icon { width: 15px; height: 15px; }
+
+.settings-btn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--border-soft);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  transition: transform 90ms ease;
+}
+.settings-btn:active { transform: scale(0.98); }
+.settings-danger { color: var(--bad); border-color: rgba(255,84,112,0.4); }
 .ai-key-row { display: flex; gap: 6px; }
 .ai-key-row input { flex: 1; }
 .ai-key-row button, .ai-send {

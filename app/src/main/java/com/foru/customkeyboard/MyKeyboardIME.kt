@@ -172,6 +172,18 @@ class MyKeyboardIME : InputMethodService() {
             currentInputConnection?.deleteSurroundingText(1, 0)
         }
 
+        // Triple-tap-to-clear on the backspace key. Grabs a generous
+        // chunk of text on both sides of the cursor and deletes it -
+        // the standard IME trick for "clear this field" without needing
+        // selection APIs the target app may not support.
+        @JavascriptInterface
+        fun clearAll() {
+            val ic = currentInputConnection ?: return
+            val before = ic.getTextBeforeCursor(10000, 0)?.length ?: 0
+            val after = ic.getTextAfterCursor(10000, 0)?.length ?: 0
+            if (before > 0 || after > 0) ic.deleteSurroundingText(before, after)
+        }
+
         @JavascriptInterface
         fun sendEnter() {
             currentInputConnection?.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
@@ -271,6 +283,33 @@ class MyKeyboardIME : InputMethodService() {
 
         @JavascriptInterface
         fun getThemeUri(): String = themeDataUrl()
+
+        // ---------- settings ----------
+
+        // "Refresh & restart": wipes everything the keyboard has saved
+        // natively (clipboard history, theme photo, cached gifs). The
+        // JS side separately clears its own localStorage (API key, saved
+        // media list) since that lives in the WebView, not here.
+        @JavascriptInterface
+        fun resetAllData() {
+            prefs().edit().clear().apply()
+            File(filesDir, KeyboardMetrics.THEME_FILE_NAME).delete()
+            lastThemeStamp = -1L
+            File(cacheDir, "gifs").deleteRecursively()
+        }
+
+        @JavascriptInterface
+        fun openUrl(url: String) {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+            } catch (e: Exception) {
+                Handler(Looper.getMainLooper()).post {
+                    Toast.makeText(this@MyKeyboardIME, "Couldn't open link", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     override fun onDestroy() {

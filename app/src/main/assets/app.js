@@ -247,7 +247,7 @@ document.getElementById("kb-root").addEventListener("click", (e) => {
     renderLetters();
     return;
   }
-  if (key === "BACK") { typeBackspace(); return; }
+  if (key === "BACK") { return; } // handled by the hold/triple-tap gesture logic below
   if (key === "SPACE") { typeChar(" "); return; }
   if (key === "ENTER") { typeEnter(); return; }
   if (key === "TO_LETTERS") { switchView("view-letters"); return; }
@@ -264,6 +264,66 @@ document.getElementById("kb-root").addEventListener("click", (e) => {
 renderLetters();
 renderGrid("view-numsym", NUMSYM_ROWS, "?123", "SYM2");
 renderGrid("view-symbols2", SYMBOLS2_ROWS, "?123", "NUM");
+
+/* =========================================================
+   BACKSPACE GESTURES
+   Tap = delete one. Hold = repeat rapidly like Gboard, faster
+   the longer it's held. Triple-tap = clear the whole field.
+   Delegated (not per-button) since BACK is re-created on every
+   render across all three views.
+   ========================================================= */
+
+function clearAllText() {
+  if (activeLocalField) {
+    activeLocalField.value = "";
+    activeLocalField.dispatchEvent(new Event("input", { bubbles: true }));
+  } else if (window.Android) {
+    Android.clearAll();
+  }
+}
+
+let bsPressStart = 0;
+let bsHoldTimeout = null;
+let bsRepeatTimeout = null;
+let bsRepeating = false;
+let bsTapTimes = [];
+
+function bsStop() {
+  clearTimeout(bsHoldTimeout); bsHoldTimeout = null;
+  clearTimeout(bsRepeatTimeout); bsRepeatTimeout = null;
+  bsRepeating = false;
+}
+function bsRepeatTick(speed) {
+  typeBackspace();
+  const next = Math.max(28, speed - 10);
+  bsRepeatTimeout = setTimeout(() => bsRepeatTick(next), next);
+}
+function bsDown() {
+  bsPressStart = Date.now();
+  bsRepeating = false;
+  bsHoldTimeout = setTimeout(() => { bsRepeating = true; bsRepeatTick(120); }, 350);
+}
+function bsUp() {
+  const wasRepeating = bsRepeating;
+  bsStop();
+  if (wasRepeating) return; // hold already deleted plenty - nothing more to do on release
+
+  typeBackspace(); // quick tap = single delete
+
+  const now = Date.now();
+  bsTapTimes = bsTapTimes.filter((t) => now - t < 600);
+  bsTapTimes.push(now);
+  if (bsTapTimes.length >= 3) {
+    bsTapTimes = [];
+    clearAllText();
+  }
+}
+
+const kbRoot = document.getElementById("kb-root");
+kbRoot.addEventListener("pointerdown", (e) => { if (e.target.closest('.key[data-key="BACK"]')) bsDown(); });
+kbRoot.addEventListener("pointerup", (e) => { if (e.target.closest('.key[data-key="BACK"]')) bsUp(); });
+kbRoot.addEventListener("pointercancel", (e) => { if (e.target.closest('.key[data-key="BACK"]')) bsStop(); });
+kbRoot.addEventListener("pointerleave", (e) => { if (e.target.closest('.key[data-key="BACK"]')) bsStop(); }, true);
 
 /* =========================================================
    EMOJI DATA - curated searchable set + generated Unicode
@@ -522,6 +582,34 @@ window.applyThemeFromNative = applyTheme;
 document.getElementById("themeBtn").addEventListener("click", () => {
   if (window.Android) Android.pickThemeImage();
 });
+
+document.getElementById("settingsBtn").addEventListener("click", () => openSettingsPanel());
+
+function openSettingsPanel() {
+  const content = createFloatingBox("Settings", "settings");
+
+  const resetBtn = document.createElement("button");
+  resetBtn.className = "settings-btn settings-danger";
+  resetBtn.textContent = "Refresh & Restart (clears saved API key, clipboard, theme)";
+  resetBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  resetBtn.onclick = () => {
+    localStorage.clear();
+    if (window.Android) Android.resetAllData();
+    applyTheme("");
+    resetBtn.textContent = "Cleared \u2713";
+    setTimeout(() => { resetBtn.textContent = "Refresh & Restart (clears saved API key, clipboard, theme)"; }, 1500);
+  };
+
+  const adminBtn = document.createElement("button");
+  adminBtn.className = "settings-btn";
+  adminBtn.textContent = "Contact Admin";
+  adminBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  adminBtn.onclick = () => {
+    if (window.Android) Android.openUrl("https://www.instagram.com/sharan.in__/");
+  };
+
+  content.append(resetBtn, adminBtn);
+}
 
 if (window.Android) {
   try {
