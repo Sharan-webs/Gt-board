@@ -1,5 +1,6 @@
 package com.foru.customkeyboard
 
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.ClipDescription
 import android.content.ClipboardManager
@@ -12,6 +13,7 @@ import android.util.Base64
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import android.view.inputmethod.EditorInfo
 import android.webkit.JavascriptInterface
 import android.webkit.WebSettings
@@ -128,14 +130,26 @@ class MyKeyboardIME : InputMethodService() {
         checkThemeUpdate()
     }
 
+    private var heightAnimator: ValueAnimator? = null
+
     private fun setKeyboardHeightDp(heightDp: Int) {
         Handler(Looper.getMainLooper()).post {
-            if (::webView.isInitialized) {
+            if (!::webView.isInitialized) return@post
+            val targetPx = dp(heightDp)
+            val startPx = webView.layoutParams.height.takeIf { it > 0 } ?: targetPx
+            if (startPx == targetPx) return@post
+
+            heightAnimator?.cancel()
+            val animator = ValueAnimator.ofInt(startPx, targetPx)
+            animator.duration = 180
+            animator.interpolator = DecelerateInterpolator()
+            animator.addUpdateListener { anim ->
                 val lp = webView.layoutParams
-                lp.height = dp(heightDp)
+                lp.height = anim.animatedValue as Int
                 webView.layoutParams = lp
-                webView.requestLayout()
             }
+            animator.start()
+            heightAnimator = animator
         }
     }
 

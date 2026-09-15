@@ -126,9 +126,10 @@ body.gt-mode .gt-toggle { color: var(--good); border-color: rgba(46,222,127,0.5)
   position: relative;
   flex: 0 0 auto;
   height: 0;
-  overflow: visible;
+  overflow: hidden;
+  transition: height 200ms ease;
 }
-#floatingArea.open { height: 272px; }
+#floatingArea.open { height: 272px; overflow: visible; }
 
 .float-box {
   position: absolute;
@@ -143,6 +144,11 @@ body.gt-mode .gt-toggle { color: var(--good); border-color: rgba(46,222,127,0.5)
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  animation: floatIn 180ms ease;
+}
+@keyframes floatIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .float-header {
@@ -194,7 +200,8 @@ body.gt-mode .gt-toggle { color: var(--good); border-color: rgba(46,222,127,0.5)
 .key-wide { flex: 1.5; }
 .key-active { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; }
 .key-enter { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
-.key-space { flex: 5; color: var(--text-faint); font-size: 12px; font-weight: 600; }
+.key-space { flex: 4; color: var(--text-faint); font-size: 12px; font-weight: 600; }
+.key-punct { flex: 0.8; font-size: 17px; }
 
 /* ---------- emoji panel content ---------- */
 .emoji-panel { display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 0; }
@@ -245,6 +252,17 @@ body.gt-mode .gt-toggle { color: var(--good); border-color: rgba(46,222,127,0.5)
 .clip-text { color: var(--text); font-size: 13px; line-height: 1.4; max-height: 3.6em; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---------- AI / translate / phrases panels ---------- */
+.ai-hint { color: var(--text-dim); font-size: 12px; line-height: 1.4; }
+.ai-chat-top { display: flex; }
+.ai-delete-key {
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  color: var(--bad);
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.ai-delete-key .icon { width: 15px; height: 15px; }
 .ai-key-row { display: flex; gap: 6px; }
 .ai-key-row input { flex: 1; }
 .ai-key-row button, .ai-send {

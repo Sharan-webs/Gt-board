@@ -113,7 +113,7 @@ async function callGroq(systemPrompt, userText) {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
     body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userText },
@@ -216,14 +216,15 @@ function buildBottomRow(fromView) {
   const abc = buildKey("TO_LETTERS", "ABC"); abc.className = "key key-wide key-func";
   const toNum = buildKey("TO_NUMSYM", "?123"); toNum.className = "key key-wide key-func";
   const emoji = buildKey("TO_EMOJI", "\u263a"); emoji.className = "key key-func";
+  const comma = buildKey(",", ","); comma.className = "key key-punct";
   const space = buildKey("SPACE", "English"); space.className = "key key-space";
-  const dot = buildKey(".", ".");
+  const dot = buildKey(".", "."); dot.className = "key key-punct";
   const enter = buildKey("ENTER", "\u23ce"); enter.className = "key key-wide key-enter";
 
   if (fromView === "view-letters") {
-    rowEl.append(toNum, emoji, space, enter);
+    rowEl.append(toNum, emoji, comma, space, dot, enter);
   } else {
-    rowEl.append(abc, emoji, space, dot, enter);
+    rowEl.append(abc, emoji, comma, space, dot, enter);
   }
   return rowEl;
 }
@@ -658,26 +659,58 @@ function copyBoxHTML(text) {
 }
 
 // ---------- CA: Call AI ----------
+// Two slides sharing the same box: first-run asks only for the API key;
+// once saved it never asks again and only the chat slide shows, with a
+// delete-key button (top-left of that slide) to reset back to slide one.
 function openAiPanel() {
   const content = createFloatingBox("Call AI", "ai");
+  if (GroqKey.get()) renderAiChatStep(content);
+  else renderAiKeyStep(content);
+}
 
-  const keyRow = document.createElement("div");
-  keyRow.className = "ai-key-row";
+function renderAiKeyStep(content) {
+  content.innerHTML = "";
+
+  const label = document.createElement("div");
+  label.className = "ai-hint";
+  label.textContent = "Paste a free Groq API key once to enable Call AI.";
+
   const keyInput = document.createElement("input");
-  keyInput.className = "local-typable";
+  keyInput.className = "ai-input local-typable";
   keyInput.type = "password";
   keyInput.inputMode = "none";
   keyInput.placeholder = "Paste Groq API key";
-  keyInput.value = GroqKey.get();
+
   const saveBtn = document.createElement("button");
-  saveBtn.textContent = GroqKey.get() ? "Saved" : "Save";
+  saveBtn.className = "ai-send";
+  saveBtn.textContent = "Save & Continue";
   saveBtn.addEventListener("mousedown", (e) => e.preventDefault());
-  saveBtn.onclick = () => { GroqKey.set(keyInput.value.trim()); saveBtn.textContent = "Saved"; };
-  const delBtn = document.createElement("button");
-  delBtn.textContent = "Delete";
-  delBtn.addEventListener("mousedown", (e) => e.preventDefault());
-  delBtn.onclick = () => { GroqKey.clear(); keyInput.value = ""; saveBtn.textContent = "Save"; };
-  keyRow.append(keyInput, saveBtn, delBtn);
+  saveBtn.onclick = () => {
+    const key = keyInput.value.trim();
+    if (!key) return;
+    GroqKey.set(key);
+    renderAiChatStep(content);
+  };
+
+  content.append(label, keyInput, saveBtn);
+}
+
+function renderAiChatStep(content) {
+  content.innerHTML = "";
+
+  const topRow = document.createElement("div");
+  topRow.className = "ai-chat-top";
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "ai-delete-key";
+  deleteBtn.setAttribute("aria-label", "Remove saved API key");
+  deleteBtn.title = "Remove saved API key";
+  deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" class="icon"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>';
+  deleteBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  deleteBtn.onclick = () => {
+    GroqKey.clear();
+    renderAiKeyStep(content);
+  };
+  topRow.appendChild(deleteBtn);
 
   const input = document.createElement("textarea");
   input.className = "ai-input local-typable";
@@ -702,7 +735,7 @@ function openAiPanel() {
     }
   };
 
-  content.append(keyRow, input, sendBtn, resultWrap);
+  content.append(topRow, input, sendBtn, resultWrap);
 }
 
 // ---------- JT / JTE ----------
