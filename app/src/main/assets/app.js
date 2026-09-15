@@ -1,5 +1,5 @@
 /* =========================================================
-   GT KEYBOARD - core app logic (floating-box UI)
+   GT KEYBOARD - core app logic
    ========================================================= */
 
 const GIPHY_KEY = "x3lgplS4mV35AlgS0ROivHNJAxz3E7j8";
@@ -14,52 +14,50 @@ const Bridge = {
 };
 
 /* =========================================================
-   ICONS (inline SVG, no text labels anywhere)
-   ========================================================= */
-
-const ICONS = {
-  gt: `<svg viewBox="0 0 24 24" class="ic ic-gt"><path d="M13 2 3 14h7l-1 8 11-13h-7z"/></svg>`,
-  ai: `<svg viewBox="0 0 24 24" class="ic ic-ai"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>`,
-  jw: `<svg viewBox="0 0 24 24" class="ic ic-jw"><path d="M4 5c3-1 5-1 8 0v14c-3-1-5-1-8 0z"/><path d="M20 5c-3-1-5-1-8 0v14c3-1 5-1 8 0z"/></svg>`,
-  jt: `<svg viewBox="0 0 24 24" class="ic ic-jt"><path d="M4 7h9M8 4v3c0 5-2 8-5 10"/><path d="M13 10c1 3 3 5 7 6"/><path d="M14 20l4-9 4 9M15.6 17h4.8"/></svg>`,
-  jte: `<svg viewBox="0 0 24 24" class="ic ic-jte"><path d="M3 6h7M6.5 4v2.4c0 3.6-1.4 5.7-3.5 7"/><path d="M9 8.5c.7 2.3 2 3.8 4.5 4.6"/><text x="13" y="19" font-size="10" font-weight="700" fill="currentColor" stroke="none">A</text></svg>`,
-  clipboard: `<svg viewBox="0 0 24 24" class="ic ic-clip"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6M9 15h6"/></svg>`,
-  kill: `<svg viewBox="0 0 24 24" class="ic ic-kill"><path d="M12 3v8"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>`,
-  emoji: `<svg viewBox="0 0 24 24" class="ic ic-emoji"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1.1" fill="currentColor" stroke="none"/><path d="M8 14c1.2 1.5 2.6 2.2 4 2.2s2.8-.7 4-2.2"/></svg>`,
-  close: `<svg viewBox="0 0 24 24" class="ic ic-close"><path d="M5 5l14 14M19 5 5 19"/></svg>`,
-  drag: `<svg viewBox="0 0 24 24" class="ic ic-drag"><circle cx="8" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="16" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="8" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="1.4" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg>`,
-  send: `<svg viewBox="0 0 24 24" class="ic ic-send"><path d="M3 11l18-8-8 18-2.5-7.5z"/></svg>`,
-  trash: `<svg viewBox="0 0 24 24" class="ic ic-trash"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg>`,
-  copy: `<svg viewBox="0 0 24 24" class="ic ic-copy"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>`,
-  gif: `<svg viewBox="0 0 24 24" class="ic ic-gif"><rect x="3" y="6" width="18" height="12" rx="2"/><text x="6" y="15" font-size="7" font-weight="800" fill="currentColor" stroke="none">GIF</text></svg>`,
-  sticker: `<svg viewBox="0 0 24 24" class="ic ic-sticker"><path d="M4 12a8 8 0 0 1 8-8h4a4 4 0 0 1 4 4v4a8 8 0 0 1-8 8H8a4 4 0 0 1-4-4z"/><path d="M20 8h-3a3 3 0 0 1-3-3"/></svg>`,
-  star: `<svg viewBox="0 0 24 24" class="ic ic-star"><path d="M12 3l2.6 5.6 6 .6-4.5 4 1.3 6-5.4-3-5.4 3 1.3-6-4.5-4 6-.6z"/></svg>`,
-  backspace: `<svg viewBox="0 0 24 24" class="ic ic-back"><path d="M8 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-6-7z"/><path d="M12 10l5 5M17 10l-5 5"/></svg>`,
-  shift: `<svg viewBox="0 0 24 24" class="ic ic-shift"><path d="M12 3l7 8h-4v8H9v-8H5z"/></svg>`,
-};
-function icon(name) { return ICONS[name] || ""; }
-function iconBtn(el, name) { el.innerHTML = icon(name); }
-
-/* =========================================================
    LOCAL TYPING ENGINE
+   Any tap on our own keys either (a) types into the app the
+   user is really typing into, or (b) types into one of our
+   OWN inputs (emoji search, AI box, translate boxes) when one
+   of those is focused. This is what makes search/AI typing
+   actually work using the SAME keyboard that's always visible
+   below every floating box - there is no second/duplicate
+   keyboard anywhere in this app.
    ========================================================= */
 
-let activeLocalField = null;
+let activeLocalField = null; // the local <input>/<textarea> currently "focused" for our purposes
+
 function markLocalField(el) { activeLocalField = el; }
 function clearLocalFieldIfMatches(el) { if (activeLocalField === el) activeLocalField = null; }
 
 function typeChar(ch) {
-  if (activeLocalField) insertIntoLocalField(activeLocalField, ch);
-  else Bridge.commitText(ch);
+  if (activeLocalField) {
+    insertIntoLocalField(activeLocalField, ch);
+  } else {
+    Bridge.commitText(ch);
+  }
 }
 function typeBackspace() {
-  if (activeLocalField) deleteFromLocalField(activeLocalField);
-  else Bridge.deleteOne();
+  if (activeLocalField) {
+    deleteFromLocalField(activeLocalField);
+  } else {
+    Bridge.deleteOne();
+  }
 }
 function typeEnter() {
-  if (activeLocalField) activeLocalField.dispatchEvent(new Event("gt-enter"));
-  else Bridge.enter();
+  if (activeLocalField) {
+    activeLocalField.dispatchEvent(new Event("gt-enter"));
+  } else {
+    Bridge.enter();
+  }
 }
+
+// Used for inserting a whole chunk of text (an emoji, a clipboard item)
+// that should always land in the REAL app the user is typing into, even
+// if one of our own search/input fields happens to still have focus.
+function insertText(text) {
+  Bridge.commitText(text);
+}
+
 function insertIntoLocalField(el, text) {
   const start = el.selectionStart ?? el.value.length;
   const end = el.selectionEnd ?? el.value.length;
@@ -80,12 +78,20 @@ function deleteFromLocalField(el) {
   }
   el.dispatchEvent(new Event("input", { bubbles: true }));
 }
+
+// Any element with class "local-typable" routes keystrokes to itself while focused.
 document.addEventListener("focusin", (e) => {
-  if (e.target.classList?.contains("local-typable")) markLocalField(e.target);
+  if (e.target.classList && e.target.classList.contains("local-typable")) {
+    markLocalField(e.target);
+  }
 });
-document.addEventListener("focusout", (e) => clearLocalFieldIfMatches(e.target));
+document.addEventListener("focusout", (e) => {
+  clearLocalFieldIfMatches(e.target);
+});
+
+// Prevent our own key taps from stealing focus away from a local field.
 document.addEventListener("mousedown", (e) => {
-  if (e.target.closest(".key, .icon-btn, .emoji-tab, .emoji-cell")) {
+  if (e.target.closest(".key, .gt-mini, .gt-toggle, .emoji-tab")) {
     if (activeLocalField) e.preventDefault();
   }
 });
@@ -102,45 +108,24 @@ const GroqKey = {
 
 async function callGroq(systemPrompt, userText) {
   const key = GroqKey.get();
-  if (!key) throw new Error("No Groq API key saved yet.");
+  if (!key) throw new Error("No Groq API key saved yet. Paste your key above first.");
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
     body: JSON.stringify({
       model: "llama-3.3-70b-versatile",
-      messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userText },
+      ],
     }),
   });
-  if (!res.ok) throw new Error("Groq error " + res.status + ": " + (await res.text()).slice(0, 160));
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error("Groq error " + res.status + ": " + errText.slice(0, 180));
+  }
   const data = await res.json();
   return data.choices?.[0]?.message?.content?.trim() || "(no response)";
-}
-
-/* =========================================================
-   CLIPBOARD
-   ========================================================= */
-
-function saveClip(text) {
-  const clips = JSON.parse(localStorage.getItem("clip_history") || "[]");
-  clips.unshift({ text, t: Date.now() });
-  localStorage.setItem("clip_history", JSON.stringify(clips.slice(0, 60)));
-}
-function getClips() { return JSON.parse(localStorage.getItem("clip_history") || "[]"); }
-function deleteClip(index) {
-  const clips = getClips();
-  clips.splice(index, 1);
-  localStorage.setItem("clip_history", JSON.stringify(clips));
-}
-function addLongPress(el, onLongPress, ms = 550) {
-  let timer = null;
-  const start = () => { timer = setTimeout(onLongPress, ms); };
-  const cancel = () => { if (timer) clearTimeout(timer); };
-  el.addEventListener("touchstart", start, { passive: true });
-  el.addEventListener("touchend", cancel);
-  el.addEventListener("touchmove", cancel);
-  el.addEventListener("mousedown", start);
-  el.addEventListener("mouseup", cancel);
-  el.addEventListener("mouseleave", cancel);
 }
 
 /* =========================================================
@@ -163,20 +148,16 @@ const SYMBOLS2_ROWS = [
   ["NUM","%","\u00a9","\u00ae","\u2122","\u2713","[","]","BACK"],
 ];
 
-let shiftOn = false, capsLock = false, lastShiftTap = 0;
+let shiftOn = false;
+let capsLock = false;
+let lastShiftTap = 0;
+
 function letterCase(ch) { return (shiftOn || capsLock) ? ch.toUpperCase() : ch; }
 
 function buildKey(label, displayOverride) {
   const b = document.createElement("button");
   b.className = "key";
   b.textContent = displayOverride ?? label;
-  b.dataset.key = label;
-  return b;
-}
-function buildIconKey(label, iconName, extraClass) {
-  const b = document.createElement("button");
-  b.className = "key key-func" + (extraClass ? " " + extraClass : "");
-  b.innerHTML = icon(iconName);
   b.dataset.key = label;
   return b;
 }
@@ -189,9 +170,13 @@ function renderLetters() {
     rowEl.className = "kb-row";
     row.forEach((k) => {
       if (k === "SHIFT") {
-        rowEl.appendChild(buildIconKey("SHIFT", "shift", "key-wide" + (shiftOn || capsLock ? " key-active" : "")));
+        const b = buildKey("SHIFT", "\u21e7");
+        b.className = "key key-wide key-func" + (shiftOn || capsLock ? " key-active" : "");
+        rowEl.appendChild(b);
       } else if (k === "BACK") {
-        rowEl.appendChild(buildIconKey("BACK", "backspace", "key-wide"));
+        const b = buildKey("BACK", "\u232b");
+        b.className = "key key-wide key-func";
+        rowEl.appendChild(b);
       } else {
         rowEl.appendChild(buildKey(k, letterCase(k)));
       }
@@ -200,6 +185,7 @@ function renderLetters() {
   });
   root.appendChild(buildBottomRow("view-letters"));
 }
+
 function renderGrid(containerId, rows, switchLabel, switchTarget) {
   const root = document.getElementById(containerId);
   root.innerHTML = "";
@@ -207,35 +193,47 @@ function renderGrid(containerId, rows, switchLabel, switchTarget) {
     const rowEl = document.createElement("div");
     rowEl.className = "kb-row";
     row.forEach((k) => {
-      if (k === "BACK") { rowEl.appendChild(buildIconKey("BACK", "backspace", "key-wide")); }
-      else if (k === switchTarget) {
-        const b = buildKey(k, switchLabel); b.className = "key key-wide key-func";
+      if (k === "BACK") {
+        const b = buildKey("BACK", "\u232b");
+        b.className = "key key-wide key-func";
         rowEl.appendChild(b);
-      } else { rowEl.appendChild(buildKey(k)); }
+      } else if (k === switchTarget) {
+        const b = buildKey(k, switchLabel);
+        b.className = "key key-wide key-func";
+        rowEl.appendChild(b);
+      } else {
+        rowEl.appendChild(buildKey(k));
+      }
     });
     root.appendChild(rowEl);
   });
   root.appendChild(buildBottomRow(containerId));
 }
+
 function buildBottomRow(fromView) {
   const rowEl = document.createElement("div");
   rowEl.className = "kb-row bottom-row";
   const abc = buildKey("TO_LETTERS", "ABC"); abc.className = "key key-wide key-func";
   const toNum = buildKey("TO_NUMSYM", "?123"); toNum.className = "key key-wide key-func";
-  const emoji = buildIconKey("OPEN_EMOJI", "emoji");
+  const emoji = buildKey("TO_EMOJI", "\u263a"); emoji.className = "key key-func";
   const space = buildKey("SPACE", "English"); space.className = "key key-space";
   const dot = buildKey(".", ".");
   const enter = buildKey("ENTER", "\u23ce"); enter.className = "key key-wide key-enter";
-  if (fromView === "view-letters") rowEl.append(toNum, emoji, space, enter);
-  else rowEl.append(abc, emoji, space, dot, enter);
+
+  if (fromView === "view-letters") {
+    rowEl.append(toNum, emoji, space, enter);
+  } else {
+    rowEl.append(abc, emoji, space, dot, enter);
+  }
   return rowEl;
 }
+
 function switchView(name) {
   document.querySelectorAll(".kb-view").forEach((v) => v.classList.remove("active"));
   document.getElementById(name).classList.add("active");
 }
 
-document.getElementById("keysArea").addEventListener("click", (e) => {
+document.getElementById("kb-root").addEventListener("click", (e) => {
   const btn = e.target.closest(".key");
   if (!btn) return;
   const key = btn.dataset.key;
@@ -243,7 +241,7 @@ document.getElementById("keysArea").addEventListener("click", (e) => {
   if (key === "SHIFT") {
     const now = Date.now();
     if (now - lastShiftTap < 350) { capsLock = !capsLock; shiftOn = false; }
-    else shiftOn = !shiftOn;
+    else { shiftOn = !shiftOn; }
     lastShiftTap = now;
     renderLetters();
     return;
@@ -255,7 +253,7 @@ document.getElementById("keysArea").addEventListener("click", (e) => {
   if (key === "TO_NUMSYM") { switchView("view-numsym"); return; }
   if (key === "SYM2") { switchView("view-symbols2"); return; }
   if (key === "NUM") { switchView("view-numsym"); return; }
-  if (key === "OPEN_EMOJI") { openEmojiPanel(); return; }
+  if (key === "TO_EMOJI") { openEmojiPanel(); return; }
 
   const ch = key.length === 1 ? letterCase(key) : key;
   typeChar(ch);
@@ -267,270 +265,8 @@ renderGrid("view-numsym", NUMSYM_ROWS, "?123", "SYM2");
 renderGrid("view-symbols2", SYMBOLS2_ROWS, "?123", "NUM");
 
 /* =========================================================
-   ICON BUTTONS (topbar)
-   ========================================================= */
-
-iconBtn(document.getElementById("gtBtn"), "gt");
-document.querySelectorAll('.gt-mini[data-panel]').forEach((btn) => {
-  iconBtn(btn, btn.dataset.panel);
-  btn.addEventListener("click", () => openPanel(btn.dataset.panel));
-});
-iconBtn(document.getElementById("clipboardBtn"), "clipboard");
-iconBtn(document.getElementById("killGt"), "kill");
-document.getElementById("clipboardBtn").addEventListener("click", openClipboardPanel);
-
-/* =========================================================
-   GT MODE
-   ========================================================= */
-
-const body = document.body;
-let gtModeOn = false;
-document.getElementById("gtBtn").addEventListener("click", () => {
-  gtModeOn = !gtModeOn;
-  body.classList.toggle("gt-mode", gtModeOn);
-  document.getElementById("gtPanel").classList.toggle("hidden", !gtModeOn);
-});
-document.getElementById("killGt").addEventListener("click", () => {
-  gtModeOn = false;
-  body.classList.remove("gt-mode");
-  document.getElementById("gtPanel").classList.add("hidden");
-  closeFloatingBox();
-});
-
-/* =========================================================
-   FLOATING PANELS
-   ========================================================= */
-
-function closeFloatingBox() {
-  document.getElementById("floatingLayer").innerHTML = "";
-  Bridge.collapse();
-}
-function createFloatingBox(iconName) {
-  closeFloatingBox();
-  Bridge.expand();
-  const layer = document.getElementById("floatingLayer");
-  const box = document.createElement("div");
-  box.className = "float-box";
-  const header = document.createElement("div");
-  header.className = "float-header";
-  const drag = document.createElement("span");
-  drag.className = "drag-handle";
-  drag.innerHTML = icon("drag");
-  const titleIcon = document.createElement("span");
-  titleIcon.className = "float-title-icon";
-  titleIcon.innerHTML = icon(iconName);
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "icon-btn float-close";
-  closeBtn.innerHTML = icon("close");
-  closeBtn.addEventListener("mousedown", (e) => e.preventDefault());
-  closeBtn.onclick = () => closeFloatingBox();
-  header.append(drag, titleIcon, closeBtn);
-  const content = document.createElement("div");
-  content.className = "float-content";
-  box.append(header, content);
-  layer.appendChild(box);
-  makeDraggable(box, drag);
-  return content;
-}
-function makeDraggable(box, handle) {
-  let sx = 0, sy = 0, ox = 0, oy = 0, dragging = false;
-  handle.addEventListener("touchstart", (e) => {
-    dragging = true;
-    const t = e.touches[0];
-    sx = t.clientX; sy = t.clientY;
-    const rect = box.getBoundingClientRect();
-    const parentRect = box.parentElement.getBoundingClientRect();
-    ox = rect.left - parentRect.left; oy = rect.top - parentRect.top;
-  });
-  handle.addEventListener("touchmove", (e) => {
-    if (!dragging) return;
-    const t = e.touches[0];
-    box.style.left = (ox + (t.clientX - sx)) + "px";
-    box.style.top = (oy + (t.clientY - sy)) + "px";
-    box.style.right = "auto";
-    box.style.bottom = "auto";
-    e.preventDefault();
-  }, { passive: false });
-  handle.addEventListener("touchend", () => dragging = false);
-}
-function copyBoxHTML(text) {
-  const wrap = document.createElement("div");
-  wrap.className = "copy-box";
-  const p = document.createElement("div");
-  p.className = "copy-text";
-  p.textContent = text;
-  const btn = document.createElement("button");
-  btn.className = "icon-btn copy-btn";
-  btn.innerHTML = icon("copy");
-  btn.addEventListener("mousedown", (e) => e.preventDefault());
-  btn.onclick = () => {
-    navigator.clipboard?.writeText(text);
-    saveClip(text);
-    btn.classList.add("copied");
-    setTimeout(() => btn.classList.remove("copied"), 900);
-  };
-  wrap.append(p, btn);
-  return wrap;
-}
-function openPanel(name) {
-  if (name === "ai") openAiPanel();
-  if (name === "jw") openJwPanel();
-  if (name === "jt") openTranslatePanel("jt", false);
-  if (name === "jte") openTranslatePanel("jte", true);
-}
-
-function openAiPanel() {
-  const content = createFloatingBox("ai");
-  const keyRow = document.createElement("div");
-  keyRow.className = "ai-key-row";
-  const keyInput = document.createElement("input");
-  keyInput.className = "local-typable";
-  keyInput.type = "password";
-  keyInput.inputMode = "none";
-  keyInput.placeholder = "Groq API key";
-  keyInput.value = GroqKey.get();
-  const saveBtn = document.createElement("button");
-  saveBtn.className = "pill-btn";
-  saveBtn.textContent = GroqKey.get() ? "\u2713" : "Save";
-  saveBtn.addEventListener("mousedown", (e) => e.preventDefault());
-  saveBtn.onclick = () => { GroqKey.set(keyInput.value.trim()); saveBtn.textContent = "\u2713"; };
-  const delBtn = document.createElement("button");
-  delBtn.className = "icon-btn pill-btn-icon";
-  delBtn.innerHTML = icon("trash");
-  delBtn.addEventListener("mousedown", (e) => e.preventDefault());
-  delBtn.onclick = () => { GroqKey.clear(); keyInput.value = ""; saveBtn.textContent = "Save"; };
-  keyRow.append(keyInput, saveBtn, delBtn);
-
-  const input = document.createElement("textarea");
-  input.className = "ai-input local-typable";
-  input.inputMode = "none";
-  input.placeholder = "Ask the AI anything...";
-  const sendBtn = document.createElement("button");
-  sendBtn.className = "icon-btn ai-send";
-  sendBtn.innerHTML = icon("send");
-  sendBtn.addEventListener("mousedown", (e) => e.preventDefault());
-  const resultWrap = document.createElement("div");
-  sendBtn.onclick = async () => {
-    resultWrap.innerHTML = "<div class='media-loading'>Thinking\u2026</div>";
-    try {
-      const reply = await callGroq("You are a helpful, concise assistant inside a keyboard app.", input.value);
-      resultWrap.innerHTML = "";
-      resultWrap.appendChild(copyBoxHTML(reply));
-    } catch (err) { resultWrap.innerHTML = `<div class='media-loading'>${err.message}</div>`; }
-  };
-  content.append(keyRow, input, sendBtn, resultWrap);
-}
-
-function openTranslatePanel(iconName, romaji) {
-  const content = createFloatingBox(iconName);
-  const input = document.createElement("input");
-  input.type = "text";
-  input.className = "ai-input local-typable";
-  input.inputMode = "none";
-  input.placeholder = "Type English text";
-  const goBtn = document.createElement("button");
-  goBtn.className = "icon-btn ai-send";
-  goBtn.innerHTML = icon("send");
-  goBtn.addEventListener("mousedown", (e) => e.preventDefault());
-  const resultWrap = document.createElement("div");
-  goBtn.onclick = async () => {
-    resultWrap.innerHTML = "<div class='media-loading'>Translating\u2026</div>";
-    const sys = romaji
-      ? "Translate the user's English text to Japanese, but output ONLY romaji (English letters). No Japanese script, no explanation."
-      : "Translate the user's English text to natural Japanese. Output ONLY the translation, no explanation.";
-    try {
-      const reply = await callGroq(sys, input.value);
-      resultWrap.innerHTML = "";
-      resultWrap.appendChild(copyBoxHTML(reply));
-    } catch (err) { resultWrap.innerHTML = `<div class='media-loading'>${err.message}</div>`; }
-  };
-  content.append(input, goBtn, resultWrap);
-}
-
-const JW_PHRASES = [
-  ["Thank you","Arigatou"],["Thank you very much","Arigatou gozaimasu"],["You're welcome","Dou itashimashite"],
-  ["Sorry / Excuse me","Sumimasen"],["I'm sorry","Gomen nasai"],["Yes","Hai"],["No","Iie"],
-  ["Good morning","Ohayou gozaimasu"],["Good afternoon","Konnichiwa"],["Good evening","Konbanwa"],
-  ["Good night","Oyasumi nasai"],["Goodbye","Sayounara"],["See you later","Mata ne"],
-  ["Nice to meet you","Hajimemashite"],["How are you?","Ogenki desu ka"],["I'm fine","Genki desu"],
-  ["Please","Onegaishimasu"],["What is this?","Kore wa nan desu ka"],["I don't understand","Wakarimasen"],
-  ["I understand","Wakarimashita"],["Do you speak English?","Eigo wo hanasemasu ka"],
-  ["What's your name?","Onamae wa nan desu ka"],["How much is this?","Kore wa ikura desu ka"],
-  ["Where is the bathroom?","Toire wa doko desu ka"],["Help me","Tasukete"],["I love you","Aishiteru"],
-  ["I like you","Suki desu"],["Cute","Kawaii"],["Cool / Awesome","Sugoi"],["Delicious","Oishii"],
-  ["Let's go","Ikimashou"],["Wait a moment","Chotto matte"],["I'm hungry","Onaka ga suita"],
-  ["I'm tired","Tsukareta"],["Good luck","Ganbatte"],["Congratulations","Omedetou"],["Welcome","Youkoso"],
-  ["Today","Kyou"],["Tomorrow","Ashita"],["Yesterday","Kinou"],["Now","Ima"],["Later","Atode"],
-  ["Friend","Tomodachi"],["Family","Kazoku"],["Water","Mizu"],["Food","Tabemono"],["Money","Okane"],
-  ["School","Gakkou"],["Home","Ie"],["Work","Shigoto"],["I'm happy","Ureshii"],["I'm sad","Kanashii"],
-  ["It's okay / no problem","Daijoubu"],["Really?","Honto"],["Of course","Mochiron"],
-  ["I'm coming","Ikimasu"],["I'm leaving","Ittekimasu"],["I'm back","Tadaima"],["Welcome back","Okaeri"],
-  ["Cheers!","Kanpai"],["One","Ichi"],["Two","Ni"],["Three","San"],["Four","Yon"],["Five","Go"],
-  ["Six","Roku"],["Seven","Nana"],["Eight","Hachi"],["Nine","Kyuu"],["Ten","Juu"],
-  ["I miss you","Aitai"],["Take care","Odaiji ni"],["Nice work / good job","Otsukaresama"],
-  ["No way!","Uso"],["Amazing","Subarashii"],
-];
-function openJwPanel() {
-  const content = createFloatingBox("jw");
-  const search = document.createElement("input");
-  search.type = "text";
-  search.className = "ai-input local-typable";
-  search.inputMode = "none";
-  search.placeholder = "Search phrases";
-  const list = document.createElement("div");
-  list.className = "jw-list";
-  function renderList(filter) {
-    list.innerHTML = "";
-    const f = filter.toLowerCase();
-    JW_PHRASES.filter(([en, jp]) => !f || en.toLowerCase().includes(f) || jp.toLowerCase().includes(f))
-      .forEach(([en, jp]) => {
-        const row = document.createElement("div");
-        row.className = "jw-row";
-        const text = document.createElement("div");
-        text.innerHTML = `<div class="jw-en">${en}</div><div class="jw-jp">${jp}</div>`;
-        const btn = document.createElement("button");
-        btn.className = "icon-btn copy-btn";
-        btn.innerHTML = icon("copy");
-        btn.addEventListener("mousedown", (e) => e.preventDefault());
-        btn.onclick = () => { navigator.clipboard?.writeText(jp); saveClip(jp); btn.classList.add("copied"); setTimeout(() => btn.classList.remove("copied"), 800); };
-        row.append(text, btn);
-        list.appendChild(row);
-      });
-  }
-  search.addEventListener("input", () => renderList(search.value));
-  renderList("");
-  content.append(search, list);
-}
-
-function openClipboardPanel() {
-  const content = createFloatingBox("clipboard");
-  const list = document.createElement("div");
-  list.className = "jw-list";
-  function render() {
-    list.innerHTML = "";
-    const clips = getClips();
-    if (clips.length === 0) {
-      list.innerHTML = "<div class='media-loading'>Nothing copied yet \u2014 items you copy in AI/JW get saved here. Hold to delete.</div>";
-      return;
-    }
-    clips.forEach((c, i) => {
-      const row = document.createElement("div");
-      row.className = "jw-row clip-row";
-      const text = document.createElement("div");
-      text.className = "clip-text";
-      text.textContent = c.text;
-      row.appendChild(text);
-      row.addEventListener("click", () => typeChar(c.text));
-      addLongPress(row, () => { deleteClip(i); render(); });
-      list.appendChild(row);
-    });
-  }
-  render();
-  content.appendChild(list);
-}
-
-/* =========================================================
-   EMOJI / GIF / STICKER / SAVED
+   EMOJI DATA - curated searchable set + generated Unicode
+   ranges for 1000+ total browsing.
    ========================================================= */
 
 const CURATED_EMOJI = [
@@ -560,7 +296,12 @@ const CURATED_EMOJI = [
   ["\ud83d\udc51","crown king queen"],["\ud83d\udc09","dragon"],["\ud83e\udd77","ninja"],["\ud83e\udd16","robot ai bot"],
   ["\ud83c\uddef\ud83c\uddf5","flag japan"],["\ud83c\uddee\ud83c\uddf3","flag india"],["\ud83c\uddfa\ud83c\uddf8","flag usa"],
 ];
-const RANGE_BLOCKS = [[0x1F600,0x1F64F],[0x1F300,0x1F5FF],[0x1F680,0x1F6FF],[0x1F900,0x1F9FF],[0x1FA70,0x1FAFF],[0x2600,0x26FF],[0x2700,0x27BF]];
+
+const RANGE_BLOCKS = [
+  [0x1F600, 0x1F64F], [0x1F300, 0x1F5FF], [0x1F680, 0x1F6FF],
+  [0x1F900, 0x1F9FF], [0x1FA70, 0x1FAFF], [0x2600, 0x26FF], [0x2700, 0x27BF],
+];
+
 function buildFullEmojiList() {
   const seen = new Set(CURATED_EMOJI.map(([ch]) => ch));
   const list = [...CURATED_EMOJI];
@@ -573,54 +314,6 @@ function buildFullEmojiList() {
   return list;
 }
 const ALL_EMOJI = buildFullEmojiList();
-let currentEmojiTab = "emoji";
-
-function openEmojiPanel() {
-  const content = createFloatingBox("emoji");
-  content.classList.add("emoji-panel");
-  const tabs = document.createElement("div");
-  tabs.id = "emojiTabs";
-  const search = document.createElement("input");
-  search.id = "emojiSearch";
-  search.className = "local-typable";
-  search.type = "text";
-  search.inputMode = "none";
-  search.autocomplete = "off";
-  const grid = document.createElement("div");
-  grid.id = "emojiGrid";
-  content.append(tabs, search, grid);
-
-  function setTab(id) {
-    currentEmojiTab = id;
-    tabs.innerHTML = "";
-    [["emoji","emoji"],["gif","gif"],["sticker","sticker"],["saved","star"]].forEach(([tid, ic]) => {
-      const b = document.createElement("button");
-      b.className = "icon-btn emoji-tab" + (currentEmojiTab === tid ? " active" : "");
-      b.innerHTML = icon(ic);
-      b.addEventListener("mousedown", (e) => e.preventDefault());
-      b.onclick = () => setTab(tid);
-      tabs.appendChild(b);
-    });
-    search.value = "";
-    search.placeholder = id === "emoji" ? "Search emoji" : id === "gif" ? "Search GIFs" : id === "sticker" ? "Search stickers" : "Saved";
-    if (id === "emoji") renderEmojiGrid(grid, ALL_EMOJI);
-    else if (id === "saved") renderSavedGrid(grid);
-    else renderMediaGrid(grid, id, "");
-  }
-
-  let searchDebounce;
-  search.addEventListener("input", (e) => {
-    const q = e.target.value.trim().toLowerCase();
-    clearTimeout(searchDebounce);
-    if (currentEmojiTab === "emoji") {
-      renderEmojiGrid(grid, q ? ALL_EMOJI.filter(([, kw]) => kw && kw.includes(q)) : ALL_EMOJI);
-    } else if (currentEmojiTab === "gif" || currentEmojiTab === "sticker") {
-      searchDebounce = setTimeout(() => renderMediaGrid(grid, currentEmojiTab, q), 400);
-    }
-  });
-
-  setTab("emoji");
-}
 
 function renderEmojiGrid(grid, list) {
   grid.innerHTML = "";
@@ -631,7 +324,8 @@ function renderEmojiGrid(grid, list) {
     b.className = "emoji-cell";
     b.textContent = ch;
     b.addEventListener("mousedown", (e) => e.preventDefault());
-    b.onclick = () => typeChar(ch);
+    // Always goes to the real app being typed into, never into our own search box.
+    b.onclick = () => insertText(ch);
     frag.appendChild(b);
   });
   grid.appendChild(frag);
@@ -655,21 +349,30 @@ async function renderMediaGrid(grid, kind, query) {
       img.addEventListener("mousedown", (e) => e.preventDefault());
       img.onclick = () => {
         Bridge.commitGif(item.images.original.url, "image/gif");
-        const saved = JSON.parse(localStorage.getItem("saved_media") || "[]");
-        saved.unshift({ thumb: item.images.fixed_width_small.url, original: item.images.original.url });
-        localStorage.setItem("saved_media", JSON.stringify(saved.slice(0, 40)));
+        saveToRecent(item.images.fixed_width_small.url, item.images.original.url);
       };
       grid.appendChild(img);
     });
     if (!data.data || data.data.length === 0) grid.innerHTML = "<div class='media-loading'>No results</div>";
-  } catch (err) { grid.innerHTML = "<div class='media-loading'>Couldn't load (check internet)</div>"; }
+  } catch (err) {
+    grid.innerHTML = "<div class='media-loading'>Couldn't load (check internet)</div>";
+  }
+}
+
+function saveToRecent(thumb, original) {
+  const saved = JSON.parse(localStorage.getItem("saved_media") || "[]");
+  saved.unshift({ thumb, original });
+  localStorage.setItem("saved_media", JSON.stringify(saved.slice(0, 40)));
 }
 
 function renderSavedGrid(grid) {
   grid.className = "emoji-grid-media";
   const saved = JSON.parse(localStorage.getItem("saved_media") || "[]");
   grid.innerHTML = "";
-  if (saved.length === 0) { grid.innerHTML = "<div class='media-loading'>Nothing saved yet</div>"; return; }
+  if (saved.length === 0) {
+    grid.innerHTML = "<div class='media-loading'>Nothing saved yet</div>";
+    return;
+  }
   saved.forEach((item) => {
     const img = document.createElement("img");
     img.className = "media-cell";
@@ -678,4 +381,416 @@ function renderSavedGrid(grid) {
     img.onclick = () => Bridge.commitGif(item.original, "image/gif");
     grid.appendChild(img);
   });
+}
+
+// ---------- Emoji floating box ----------
+// Opens ABOVE the keyboard. The letters/numbers view underneath is left
+// exactly as it was and stays fully usable - that's what fixes "can't
+// get back to the alphabet": you never actually leave it.
+function openEmojiPanel() {
+  const content = createFloatingBox("Emoji", "emoji");
+  content.classList.add("emoji-panel");
+
+  const tabs = document.createElement("div");
+  tabs.id = "emojiTabs";
+  const search = document.createElement("input");
+  search.id = "emojiSearch";
+  search.className = "local-typable";
+  search.type = "text";
+  search.inputMode = "none";
+  search.autocomplete = "off";
+  const grid = document.createElement("div");
+  grid.id = "emojiGrid";
+  content.append(tabs, search, grid);
+
+  let currentTab = "emoji";
+
+  function renderTabs() {
+    tabs.innerHTML = "";
+    [["emoji","Emoji"],["gif","GIF"],["sticker","Sticker"],["saved","Saved"]].forEach(([id, label]) => {
+      const b = document.createElement("button");
+      b.textContent = label;
+      b.className = "emoji-tab" + (currentTab === id ? " active" : "");
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+      b.onclick = () => { currentTab = id; renderTabs(); };
+      tabs.appendChild(b);
+    });
+    search.value = "";
+    search.placeholder = currentTab === "emoji" ? "Search " + ALL_EMOJI.length + "+ emoji"
+      : currentTab === "gif" ? "Search GIFs"
+      : currentTab === "sticker" ? "Search stickers"
+      : "Saved items";
+    if (currentTab === "emoji") renderEmojiGrid(grid, ALL_EMOJI);
+    else if (currentTab === "saved") renderSavedGrid(grid);
+    else renderMediaGrid(grid, currentTab, "");
+  }
+
+  let searchDebounce;
+  search.addEventListener("input", () => {
+    const q = search.value.trim().toLowerCase();
+    clearTimeout(searchDebounce);
+    if (currentTab === "emoji") {
+      renderEmojiGrid(grid, q ? ALL_EMOJI.filter(([, kw]) => kw && kw.includes(q)) : ALL_EMOJI);
+    } else if (currentTab === "gif" || currentTab === "sticker") {
+      searchDebounce = setTimeout(() => renderMediaGrid(grid, currentTab, q), 400);
+    }
+  });
+
+  renderTabs();
+}
+
+/* =========================================================
+   CLIPBOARD PANEL
+   Backed by native clipboard history (MyKeyboardIME listens
+   for system clipboard changes). Tap an item to paste it,
+   long-press to delete it.
+   ========================================================= */
+
+function openClipboardPanel() {
+  const content = createFloatingBox("Clipboard", "clipboard");
+  const list = document.createElement("div");
+  list.className = "clip-list";
+  content.appendChild(list);
+
+  function render() {
+    let items = [];
+    if (window.Android) {
+      try { items = JSON.parse(Android.getClipHistory() || "[]"); } catch (e) { items = []; }
+    }
+    list.innerHTML = "";
+    if (!items.length) {
+      list.innerHTML = "<div class='media-loading'>Nothing copied yet</div>";
+      return;
+    }
+    items.forEach((text) => {
+      const row = document.createElement("div");
+      row.className = "clip-row";
+      const p = document.createElement("div");
+      p.className = "clip-text";
+      p.textContent = text;
+      row.appendChild(p);
+
+      let pressTimer = null;
+      let longPressed = false;
+      row.addEventListener("pointerdown", () => {
+        longPressed = false;
+        pressTimer = setTimeout(() => {
+          longPressed = true;
+          if (window.Android) Android.deleteClipItem(text);
+          row.classList.add("clip-row-removing");
+          setTimeout(render, 180);
+        }, 500);
+      });
+      const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+      row.addEventListener("pointerup", () => {
+        cancelPress();
+        if (!longPressed) {
+          insertText(text);
+          closeFloatingBox();
+        }
+      });
+      row.addEventListener("pointerleave", cancelPress);
+      row.addEventListener("pointercancel", cancelPress);
+
+      list.appendChild(row);
+    });
+  }
+  render();
+}
+
+/* =========================================================
+   THEME (background photo)
+   The photo picker + crop screen are entirely native (see
+   ThemePickerActivity). We just trigger it and, whenever the
+   keyboard notices the saved photo changed, apply it here.
+   ========================================================= */
+
+function applyTheme(dataUrl) {
+  const root = document.getElementById("kb-root");
+  if (dataUrl) {
+    root.style.backgroundImage =
+      `linear-gradient(180deg, rgba(14,15,19,0.72), rgba(14,15,19,0.86)), url("${dataUrl}")`;
+    root.classList.add("has-theme");
+  } else {
+    root.style.backgroundImage = "";
+    root.classList.remove("has-theme");
+  }
+}
+window.applyThemeFromNative = applyTheme;
+
+document.getElementById("themeBtn").addEventListener("click", () => {
+  if (window.Android) Android.pickThemeImage();
+});
+
+if (window.Android) {
+  try {
+    const initial = Android.getThemeUri();
+    if (initial) applyTheme(initial);
+  } catch (e) { /* no theme saved yet */ }
+}
+
+/* =========================================================
+   GT MODE
+   ========================================================= */
+
+const body = document.body;
+let gtModeOn = false;
+
+document.getElementById("gtBtn").addEventListener("click", () => {
+  gtModeOn = !gtModeOn;
+  body.classList.toggle("gt-mode", gtModeOn);
+  document.getElementById("gtPanel").classList.toggle("hidden", !gtModeOn);
+});
+document.getElementById("killGt").addEventListener("click", () => {
+  gtModeOn = false;
+  body.classList.remove("gt-mode");
+  document.getElementById("gtPanel").classList.add("hidden");
+  closeFloatingBox();
+});
+document.querySelectorAll(".gt-mini[data-panel]").forEach((btn) => {
+  btn.addEventListener("click", () => openPanel(btn.dataset.panel));
+});
+
+function openPanel(name) {
+  if (name === "ai") openAiPanel();
+  if (name === "jw") openJwPanel();
+  if (name === "jt") openTranslatePanel("Eng to JP", false);
+  if (name === "jte") openTranslatePanel("Eng to JP (romaji)", true);
+  if (name === "clipboard") openClipboardPanel();
+}
+
+/* =========================================================
+   FLOATING BOXES
+   One shared component used by every panel (emoji / AI /
+   phrases / translate / clipboard). Always sits ABOVE the key
+   rows with a fixed 2cm gap, never covers or resizes the keys,
+   and never contains a duplicate keyboard - typing happens on
+   the real keys, which stay visible the entire time.
+   ========================================================= */
+
+function closeFloatingBox() {
+  const area = document.getElementById("floatingArea");
+  area.innerHTML = "";
+  area.classList.remove("open");
+  Bridge.collapse();
+}
+
+function createFloatingBox(title, kind) {
+  closeFloatingBox();
+  const area = document.getElementById("floatingArea");
+  area.classList.add("open");
+  Bridge.expand();
+
+  const box = document.createElement("div");
+  box.className = "float-box" + (kind ? " float-" + kind : "");
+
+  const header = document.createElement("div");
+  header.className = "float-header";
+
+  const grip = document.createElement("span");
+  grip.className = "float-grip";
+  grip.innerHTML = '<svg viewBox="0 0 24 24" class="icon icon-grip"><circle cx="8" cy="6" r="1.4"/><circle cx="16" cy="6" r="1.4"/><circle cx="8" cy="12" r="1.4"/><circle cx="16" cy="12" r="1.4"/><circle cx="8" cy="18" r="1.4"/><circle cx="16" cy="18" r="1.4"/></svg>';
+
+  const titleEl = document.createElement("span");
+  titleEl.className = "float-title";
+  titleEl.textContent = title;
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "float-close";
+  closeBtn.setAttribute("aria-label", "Close");
+  closeBtn.innerHTML = '<svg viewBox="0 0 24 24" class="icon"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  closeBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  closeBtn.onclick = () => closeFloatingBox();
+
+  header.append(grip, titleEl, closeBtn);
+
+  const content = document.createElement("div");
+  content.className = "float-content";
+
+  box.append(header, content);
+  area.appendChild(box);
+  makeDraggable(box, grip, area);
+  return content;
+}
+
+function makeDraggable(box, handle, bounds) {
+  let sx = 0, sy = 0, ox = 0, oy = 0, dragging = false;
+
+  handle.addEventListener("pointerdown", (e) => {
+    dragging = true;
+    handle.setPointerCapture(e.pointerId);
+    sx = e.clientX; sy = e.clientY;
+    ox = box.offsetLeft; oy = box.offsetTop;
+    box.style.right = "auto";
+  });
+  handle.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    const boundsRect = bounds.getBoundingClientRect();
+    let nx = ox + (e.clientX - sx);
+    let ny = oy + (e.clientY - sy);
+    nx = Math.max(0, Math.min(nx, Math.max(0, boundsRect.width - box.offsetWidth)));
+    ny = Math.max(0, Math.min(ny, Math.max(0, boundsRect.height - box.offsetHeight)));
+    box.style.left = nx + "px";
+    box.style.top = ny + "px";
+  });
+  const endDrag = () => { dragging = false; };
+  handle.addEventListener("pointerup", endDrag);
+  handle.addEventListener("pointercancel", endDrag);
+}
+
+function copyBoxHTML(text) {
+  const wrap = document.createElement("div");
+  wrap.className = "copy-box";
+  const p = document.createElement("div");
+  p.className = "copy-text";
+  p.textContent = text;
+  const btn = document.createElement("button");
+  btn.className = "copy-btn";
+  btn.textContent = "Copy";
+  btn.addEventListener("mousedown", (e) => e.preventDefault());
+  btn.onclick = () => {
+    navigator.clipboard?.writeText(text);
+    btn.textContent = "Copied";
+    setTimeout(() => (btn.textContent = "Copy"), 1200);
+  };
+  wrap.append(p, btn);
+  return wrap;
+}
+
+// ---------- CA: Call AI ----------
+function openAiPanel() {
+  const content = createFloatingBox("Call AI", "ai");
+
+  const keyRow = document.createElement("div");
+  keyRow.className = "ai-key-row";
+  const keyInput = document.createElement("input");
+  keyInput.className = "local-typable";
+  keyInput.type = "password";
+  keyInput.inputMode = "none";
+  keyInput.placeholder = "Paste Groq API key";
+  keyInput.value = GroqKey.get();
+  const saveBtn = document.createElement("button");
+  saveBtn.textContent = GroqKey.get() ? "Saved" : "Save";
+  saveBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  saveBtn.onclick = () => { GroqKey.set(keyInput.value.trim()); saveBtn.textContent = "Saved"; };
+  const delBtn = document.createElement("button");
+  delBtn.textContent = "Delete";
+  delBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  delBtn.onclick = () => { GroqKey.clear(); keyInput.value = ""; saveBtn.textContent = "Save"; };
+  keyRow.append(keyInput, saveBtn, delBtn);
+
+  const input = document.createElement("textarea");
+  input.className = "ai-input local-typable";
+  input.inputMode = "none";
+  input.placeholder = "Ask the AI anything...";
+
+  const sendBtn = document.createElement("button");
+  sendBtn.className = "ai-send";
+  sendBtn.textContent = "Send";
+  sendBtn.addEventListener("mousedown", (e) => e.preventDefault());
+
+  const resultWrap = document.createElement("div");
+
+  sendBtn.onclick = async () => {
+    resultWrap.innerHTML = "<div class='media-loading'>Thinking\u2026</div>";
+    try {
+      const reply = await callGroq("You are a helpful, concise assistant inside a keyboard app.", input.value);
+      resultWrap.innerHTML = "";
+      resultWrap.appendChild(copyBoxHTML(reply));
+    } catch (err) {
+      resultWrap.innerHTML = `<div class='media-loading'>${err.message}</div>`;
+    }
+  };
+
+  content.append(keyRow, input, sendBtn, resultWrap);
+}
+
+// ---------- JT / JTE ----------
+function openTranslatePanel(title, romaji) {
+  const content = createFloatingBox(title, romaji ? "jte" : "jt");
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "ai-input local-typable";
+  input.inputMode = "none";
+  input.placeholder = "Type an English word or sentence";
+  const goBtn = document.createElement("button");
+  goBtn.className = "ai-send";
+  goBtn.textContent = "Translate";
+  goBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  const resultWrap = document.createElement("div");
+
+  goBtn.onclick = async () => {
+    resultWrap.innerHTML = "<div class='media-loading'>Translating\u2026</div>";
+    const sys = romaji
+      ? "Translate the user's English text to Japanese, but output ONLY the Japanese written using romaji (English letters). No Japanese script, no explanation."
+      : "Translate the user's English text to natural Japanese. Output ONLY the Japanese translation, no explanation.";
+    try {
+      const reply = await callGroq(sys, input.value);
+      resultWrap.innerHTML = "";
+      resultWrap.appendChild(copyBoxHTML(reply));
+    } catch (err) {
+      resultWrap.innerHTML = `<div class='media-loading'>${err.message}</div>`;
+    }
+  };
+
+  content.append(input, goBtn, resultWrap);
+}
+
+// ---------- JW ----------
+const JW_PHRASES = [
+  ["Thank you","Arigatou"],["Thank you very much","Arigatou gozaimasu"],["You're welcome","Dou itashimashite"],
+  ["Sorry / Excuse me","Sumimasen"],["I'm sorry","Gomen nasai"],["Yes","Hai"],["No","Iie"],
+  ["Good morning","Ohayou gozaimasu"],["Good afternoon","Konnichiwa"],["Good evening","Konbanwa"],
+  ["Good night","Oyasumi nasai"],["Goodbye","Sayounara"],["See you later","Mata ne"],
+  ["Nice to meet you","Hajimemashite"],["How are you?","Ogenki desu ka"],["I'm fine","Genki desu"],
+  ["Please","Onegaishimasu"],["What is this?","Kore wa nan desu ka"],["I don't understand","Wakarimasen"],
+  ["I understand","Wakarimashita"],["Do you speak English?","Eigo wo hanasemasu ka"],
+  ["What's your name?","Onamae wa nan desu ka"],["How much is this?","Kore wa ikura desu ka"],
+  ["Where is the bathroom?","Toire wa doko desu ka"],["Help me","Tasukete"],["I love you","Aishiteru"],
+  ["I like you","Suki desu"],["Cute","Kawaii"],["Cool / Awesome","Sugoi"],["Delicious","Oishii"],
+  ["Let's go","Ikimashou"],["Wait a moment","Chotto matte"],["I'm hungry","Onaka ga suita"],
+  ["I'm tired","Tsukareta"],["Good luck","Ganbatte"],["Congratulations","Omedetou"],["Welcome","Youkoso"],
+  ["Today","Kyou"],["Tomorrow","Ashita"],["Yesterday","Kinou"],["Now","Ima"],["Later","Atode"],
+  ["Friend","Tomodachi"],["Family","Kazoku"],["Water","Mizu"],["Food","Tabemono"],["Money","Okane"],
+  ["School","Gakkou"],["Home","Ie"],["Work","Shigoto"],["I'm happy","Ureshii"],["I'm sad","Kanashii"],
+  ["It's okay / no problem","Daijoubu"],["Really?","Honto"],["Of course","Mochiron"],
+  ["I'm coming","Ikimasu"],["I'm leaving","Ittekimasu"],["I'm back","Tadaima"],["Welcome back","Okaeri"],
+  ["Cheers!","Kanpai"],["One","Ichi"],["Two","Ni"],["Three","San"],["Four","Yon"],["Five","Go"],
+  ["Six","Roku"],["Seven","Nana"],["Eight","Hachi"],["Nine","Kyuu"],["Ten","Juu"],
+  ["I miss you","Aitai"],["Take care","Odaiji ni"],["Nice work / good job","Otsukaresama"],
+  ["No way!","Uso"],["Amazing","Subarashii"],
+];
+
+function openJwPanel() {
+  const content = createFloatingBox("Japanese Phrases", "jw");
+  const search = document.createElement("input");
+  search.type = "text";
+  search.className = "ai-input local-typable";
+  search.inputMode = "none";
+  search.placeholder = "Search phrases...";
+  const list = document.createElement("div");
+  list.className = "jw-list";
+
+  function renderList(filter) {
+    list.innerHTML = "";
+    const f = filter.toLowerCase();
+    JW_PHRASES.filter(([en, jp]) => !f || en.toLowerCase().includes(f) || jp.toLowerCase().includes(f))
+      .forEach(([en, jp]) => {
+        const row = document.createElement("div");
+        row.className = "jw-row";
+        const text = document.createElement("div");
+        text.innerHTML = `<div class="jw-en">${en}</div><div class="jw-jp">${jp}</div>`;
+        const btn = document.createElement("button");
+        btn.className = "copy-btn";
+        btn.textContent = "Copy";
+        btn.addEventListener("mousedown", (e) => e.preventDefault());
+        btn.onclick = () => { navigator.clipboard?.writeText(jp); btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy", 1000); };
+        row.append(text, btn);
+        list.appendChild(row);
+      });
+  }
+  search.addEventListener("input", () => renderList(search.value));
+  renderList("");
+
+  content.append(search, list);
 }
